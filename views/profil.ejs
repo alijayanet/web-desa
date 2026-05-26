@@ -1,0 +1,111 @@
+<%- include('partials/header') %>
+
+  <!-- Page Header -->
+  <section class="page-header">
+    <div class="container">
+      <h1>Profil <%= settings.nama_desa || 'Desa Ujunggebang' %></h1>
+      <p>Kecamatan <%= settings.kecamatan || 'Sukra' %>, Kabupaten <%= settings.kabupaten || 'Indramayu' %>, Provinsi <%= settings.provinsi || 'Jawa Barat' %></p>
+    </div>
+  </section>
+
+  <!-- Profile Section -->
+  <section class="profile-section">
+    <div class="container">
+      
+      <!-- Sejarah & Pengantar -->
+      <div class="profile-card">
+        <h3>Sejarah Singkat Desa</h3>
+        <p style="margin-bottom: 16px; font-size: 15px; text-indent: 30px;">
+          Desa Ujunggebang merupakan salah satu desa yang terletak di pesisir utara wilayah Kecamatan Sukra, Kabupaten Indramayu. Nama Ujunggebang sendiri berasal dari kisah para tetua terdahulu yang menemukan kawasan subur di ujung pesisir yang dipenuhi oleh pohon-pohon Gebang (sejenis palem hutan). Seiring berjalannya waktu, kawasan pemukiman ini berkembang menjadi pusat pertanian padi yang produktif serta perkebunan rakyat.
+        </p>
+        <p style="font-size: 15px; text-indent: 30px;">
+          Kini, Desa Ujunggebang berkomitmen menjadi pelopor dalam digitalisasi layanan desa di Kabupaten Indramayu, untuk mempermudah kehidupan warga dan meningkatkan transparansi administrasi desa di era modern.
+        </p>
+      </div>
+
+      <!-- Visi & Misi -->
+      <div class="profile-card">
+        <h3>Visi Desa</h3>
+        <p style="font-size: 18px; font-weight: 600; font-style: italic; text-align: center; color: var(--dark-light); margin: 10px 0 30px 0; line-height: 1.6; padding: 20px; background: rgba(14, 165, 233, 0.04); border-radius: var(--radius-sm);">
+          "<%= settings.visi %>"
+        </p>
+        
+        <h3 style="border-bottom: none; padding-bottom: 0; margin-top: 30px;">Misi Desa</h3>
+        <ul class="misi-list" style="margin-top: 16px;">
+          <% if (settings.misi && settings.misi.length > 0) { %>
+            <% settings.misi.forEach(function(item) { %>
+              <li><%= item %></li>
+            <% }); %>
+          <% } else { %>
+            <li>Meningkatkan tata kelola pemerintahan desa yang transparan dan akuntabel.</li>
+            <li>Meningkatkan kualitas pelayanan publik berbasis teknologi informasi.</li>
+            <li>Mendorong perekonomian warga melalui pemberdayaan sektor pertanian.</li>
+          <% } %>
+        </ul>
+      </div>
+
+      <!-- Struktur Organisasi Aparat Desa -->
+      <div class="profile-card">
+        <h3>Struktur Organisasi Pemerintah Desa</h3>
+        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 24px;">Berikut adalah aparat pemerintah Desa Ujunggebang yang siap melayani kebutuhan administrasi dan kemasyarakatan Anda:</p>
+        
+        <div class="aparat-grid">
+          <div class="aparat-card" style="grid-column: span 4; max-width: 280px; margin: 0 auto 20px auto; border-color: rgba(14, 165, 233, 0.2); background: rgba(14, 165, 233, 0.03);">
+            <div class="aparat-avatar" style="background: var(--grad-primary);">K</div>
+            <h4><%= settings.kades || 'H. Sukarno, M.Si' %></h4>
+            <p><%= settings.sebutan_kades || 'Kepala Desa' %></p>
+          </div>
+          
+          <div class="aparat-card" style="grid-column: 1 / span 2; max-width: 280px; margin-left: auto;">
+            <div class="aparat-avatar" style="background: var(--grad-primary);">S</div>
+            <h4><%= settings.sekdes || 'Suryono, S.Sos' %></h4>
+            <p>Sekretaris Desa</p>
+          </div>
+          
+          <% const org = (settings && Array.isArray(settings.struktur_organisasi)) ? settings.struktur_organisasi : []; %>
+          <% if (org.length > 0) { %>
+            <% org.forEach(function(item, idx) { %>
+              <div class="aparat-card" style="<%= idx === 0 ? 'grid-column: 3 / span 2; max-width: 280px; margin-right: auto;' : '' %>">
+                <div class="aparat-avatar" style="<%= idx === 0 ? 'background: var(--grad-primary);' : '' %>"><%= (item && item.nama ? item.nama.trim().charAt(0).toUpperCase() : '?') %></div>
+                <h4><%= item && item.nama ? item.nama : '-' %></h4>
+                <p><%= item && item.jabatan ? item.jabatan : '-' %></p>
+              </div>
+            <% }); %>
+          <% } else { %>
+            <div class="aparat-card" style="grid-column: 3 / span 2; max-width: 280px; margin-right: auto;">
+              <div class="aparat-avatar" style="background: var(--grad-primary);">A</div>
+              <h4>Andi Wijaya</h4>
+              <p>Staff Kesejahteraan & Pelayanan</p>
+            </div>
+            
+            <div class="aparat-card">
+              <div class="aparat-avatar">R</div>
+              <h4>Rudi Hartono</h4>
+              <p>Kepala Dusun Krajan</p>
+            </div>
+            
+            <div class="aparat-card">
+              <div class="aparat-avatar">H</div>
+              <h4>Hendra Wijaya</h4>
+              <p>Kepala Dusun Sari Mulyo</p>
+            </div>
+            
+            <div class="aparat-card">
+              <div class="aparat-avatar">B</div>
+              <h4>Bambang S.</h4>
+              <p>Kepala Dusun Tirta Jaya</p>
+            </div>
+            
+            <div class="aparat-card">
+              <div class="aparat-avatar">D</div>
+              <h4>Dewi Lestari</h4>
+              <p>Bendahara Desa</p>
+            </div>
+          <% } %>
+        </div>
+      </div>
+      
+    </div>
+  </section>
+
+<%- include('partials/footer') %>

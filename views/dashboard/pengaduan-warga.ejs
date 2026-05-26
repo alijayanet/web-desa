@@ -1,0 +1,107 @@
+<%- include('../partials/dashboard-header') %>
+
+  <div class="dashboard-row">
+    
+    <!-- Formulir Pengaduan Baru -->
+    <div class="card-panel">
+      <div class="panel-header">
+        <h3>📢 Layanan Aspirasi & Pengaduan Warga</h3>
+      </div>
+      
+      <% if (error === 'missing_fields') { %>
+        <div class="alert alert-danger">
+          <span>⚠️</span>
+          <div>Mohon lengkapi semua kolom formulir.</div>
+        </div>
+      <% } %>
+
+      <form action="/dashboard/pengaduan" method="POST">
+        <div class="form-group">
+          <label for="judul">JUDUL LAPORAN PENGADUAN</label>
+          <input type="text" id="judul" name="judul" class="form-control" placeholder="Contoh: Lampu Jalan Mati di Gang 3, Selokan Blok Desa Tersumbat" required>
+        </div>
+
+        <div class="form-group">
+          <label for="kategori">KATEGORI LAPORAN</label>
+          <select id="kategori" name="kategori" class="form-control" required>
+            <% if (typeof kategoriList !== 'undefined' && kategoriList.length > 0) { %>
+              <% kategoriList.forEach(function(kat) { %>
+                <option value="<%= kat.nama %>"><%= kat.nama %></option>
+              <% }); %>
+            <% } else { %>
+              <option value="Infrastruktur">Infrastruktur</option>
+              <option value="Fasilitas Umum">Fasilitas Umum</option>
+              <option value="Keamanan">Keamanan</option>
+              <option value="Bantuan Sosial">Bantuan Sosial</option>
+              <option value="Layanan Desa">Layanan Desa</option>
+              <option value="Lain-lain">Lain-lain</option>
+            <% } %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="isi">DESKRIPSI LENGKAP PENGADUAN</label>
+          <textarea id="isi" name="isi" rows="6" class="form-control" placeholder="Jelaskan secara rinci mengenai lokasi kejadian, kronologi masalah, serta harapan perbaikan dari warga..." required></textarea>
+        </div>
+
+        <button type="submit" class="btn-sm btn-sm-primary" style="width: 100%; padding: 14px; font-size: 14px; border-radius: var(--radius-sm); margin-top: 10px;">
+          Kirim Pengaduan / Aspirasi ke Kelurahan
+        </button>
+      </form>
+    </div>
+
+    <!-- Riwayat Pengaduan Mandiri -->
+    <div class="card-panel">
+      <div class="panel-header">
+        <h3>Daftar Pengaduan Saya</h3>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <% if (riwayat && riwayat.length > 0) { %>
+          <% riwayat.forEach(function(p) { %>
+            <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 20px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px; align-items: center;">
+                <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><%= p.kategori %></span>
+                
+                <% if (p.status === 'Selesai') { %>
+                  <span class="badge badge-success">Selesai Ditangani</span>
+                <% } else if (p.status === 'Diproses') { %>
+                  <span class="badge badge-process">Sedang Diproses</span>
+                <% } else { %>
+                  <span class="badge badge-pending">Menunggu Tanggapan</span>
+                <% } %>
+              </div>
+
+              <h4 style="font-size: 15px; font-weight: 800; margin-bottom: 6px;"><%= p.judul %></h4>
+              <p style="font-size: 12px; color: var(--text-dark); line-height: 1.5; margin-bottom: 12px;"><%= p.isi %></p>
+              
+              <!-- TAMPILAN FEEDBACK/TANGGAPAN DARI ADMIN -->
+              <% if (p.tanggapan) { %>
+                <div style="background: rgba(16, 185, 129, 0.04); border-left: 4px solid var(--success); border-top: 1px solid rgba(16, 185, 129, 0.1); border-right: 1px solid rgba(16, 185, 129, 0.1); border-bottom: 1px solid rgba(16, 185, 129, 0.1); border-radius: 4px; padding: 12px; font-size: 12px; margin-bottom: 12px; line-height: 1.4;">
+                  <strong style="color: var(--success);">💬 Respon Resmi Kelurahan:</strong>
+                  <p style="margin-top: 6px; color: var(--text-dark);"><%= p.tanggapan %></p>
+                  <div style="margin-top: 8px; font-size: 10px; color: var(--text-muted); text-align: right;">
+                    Oleh: <%= p.tanggapan_oleh %> | Tanggal: <%= p.tanggal_tanggapan %>
+                  </div>
+                </div>
+              <% } %>
+
+              <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-light); border-top: 1px solid rgba(15, 23, 42, 0.04); padding-top: 10px;">
+                <span>ID: <%= p.id %></span>
+                <span>📅 Dilaporkan: <%= p.tanggal %></span>
+              </div>
+            </div>
+          <% }); %>
+        <% } else { %>
+          <div style="text-align: center; color: var(--text-muted); padding: 40px 0;">
+            <div style="font-size: 40px; margin-bottom: 12px;">📢</div>
+            <h4>Belum ada pengaduan</h4>
+            <p>Anda belum pernah mengirim laporan pengaduan atau aspirasi.</p>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+  </div>
+
+<%- include('../partials/dashboard-footer') %>

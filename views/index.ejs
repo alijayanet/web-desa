@@ -1,0 +1,143 @@
+<%- include('partials/header') %>
+
+  <!-- Hero Section -->
+  <section class="hero">
+    <div class="container hero-grid">
+      <div class="hero-content">
+        <h1>Transformasi Digital Pelayanan Publik <span><%= settings.nama_desa || 'Desa Ujunggebang' %></span></h1>
+        <p>
+          Selamat datang di platform resmi Desa Digital. Dapatkan kemudahan pelayanan administrasi surat, pengiriman pengaduan, dan ikuti berita kegiatan pembangunan desa secara mudah, cepat, dan transparan dari mana saja.
+        </p>
+        <div class="hero-actions">
+          <a href="/login" class="btn btn-primary">Ajukan Surat & Laporan</a>
+          <a href="/profil" class="btn btn-secondary">Pelajari Desa Kami</a>
+        </div>
+      </div>
+      
+      <div class="hero-visual">
+        <div class="hero-card-glass">
+          <div class="hero-card-header">
+            <div class="hero-card-avatar">🏛️</div>
+            <div class="hero-card-userinfo">
+              <h4>Pelayanan E-Surat</h4>
+              <p>Desa Ujunggebang</p>
+            </div>
+          </div>
+          <div class="hero-card-body">
+            <div class="hero-card-row">
+              <span>Jenis Pelayanan</span>
+              <strong>Surat Keterangan Usaha (SKU)</strong>
+            </div>
+            <div class="hero-card-row">
+              <span>Waktu Proses</span>
+              <strong>Cepat & Instan</strong>
+            </div>
+            <div class="hero-card-row">
+              <span>Status Dokumen</span>
+              <span class="hero-badge-status">Siap Cetak</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Stats Section -->
+  <section class="stats">
+    <div class="container stats-grid">
+      <div class="stat-item">
+        <div class="stat-num"><%= statistik.penduduk %></div>
+        <div class="stat-label">Penduduk Terdata</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num"><%= statistik.suratSelesai %>+</div>
+        <div class="stat-label">Surat Terselesaikan</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num"><%= statistik.pengaduanSelesai %>+</div>
+        <div class="stat-label">Laporan Ditangani</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-num"><%= statistik.dusun %></div>
+        <div class="stat-label">Dusun/Blok Wilayah</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="features">
+    <div class="container">
+      <div class="section-title">
+        <h2>Layanan Utama <span>Digitalisasi Desa</span></h2>
+        <p>Semua layanan administrasi desa kini berada dalam genggaman Anda. Masuk ke portal warga untuk menikmati berbagai fitur unggulan berikut.</p>
+      </div>
+      
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">✉️</div>
+          <h3>Administrasi Surat Online</h3>
+          <p>Ajukan permohonan surat seperti SKU, SKTM, Surat Domisili, dan lainnya secara online. Isi data, pantau proses verifikasi, dan cetak langsung dari rumah.</p>
+          <a href="/login" class="feature-link">Mulai Ajukan &rarr;</a>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">📢</div>
+          <h3>Laporan & Pengaduan Warga</h3>
+          <p>Laporkan kendala fasilitas umum, jalan rusak, kendala sosial, atau ajukan aspirasi pembangunan langsung ke pihak kelurahan secara tertulis dan transparan.</p>
+          <a href="/login" class="feature-link">Kirim Pengaduan &rarr;</a>
+        </div>
+        
+        <div class="feature-card">
+          <div class="feature-icon">👥</div>
+          <h3>Manajemen Kependudukan</h3>
+          <p>Bagi aparat desa, sistem ini mempermudah pencatatan data demografi kependudukan, pemantauan riwayat layanan warga, dan visualisasi statistik desa secara akurat.</p>
+          <a href="/login" class="feature-link">Akses Dashboard &rarr;</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- News Section -->
+  <section class="news-section">
+    <div class="container">
+      <div class="section-title">
+        <h2>Kabar & Kegiatan <span>Desa Terbaru</span></h2>
+        <p>Ikuti berita pembangunan terbaru, pengumuman resmi, dan dokumentasi aktivitas gotong royong warga Desa Ujunggebang.</p>
+      </div>
+      
+      <div class="news-grid">
+        <% if (berita && berita.length > 0) { %>
+          <% berita.forEach(function(item) { %>
+            <div class="news-card">
+              <div class="news-img" style="position: relative; overflow: hidden; background: #0f172a; min-height: 180px;">
+                <% if (item.gambar && item.gambar !== 'berita_default.jpg') { %>
+                  <img src="/uploads/<%= item.gambar %>" alt="<%= item.judul %>" 
+                    style="width: 100%; height: 180px; object-fit: cover; display: block;">
+                <% } else { %>
+                  <div style="width: 100%; height: 180px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);">
+                    <span style="font-size: 48px; opacity: 0.25;">📰</span>
+                  </div>
+                <% } %>
+              </div>
+              <div class="news-body">
+                <div class="news-meta">
+                  <span>📅 <%= item.tanggal %></span>
+                  <span>🏷️ <%= item.kategori %></span>
+                </div>
+                <h3><%= item.judul %></h3>
+                <p><%= item.ringkasan %></p>
+                <a href="/berita/<%= item.id %>" class="news-link">Selengkapnya &rarr;</a>
+              </div>
+            </div>
+          <% }); %>
+
+        <% } else { %>
+          <div style="grid-column: span 3; text-align: center; color: var(--text-muted); padding: 40px 0;">
+            <p>Belum ada berita yang diterbitkan saat ini.</p>
+          </div>
+        <% } %>
+      </div>
+    </div>
+  </section>
+
+<%- include('partials/footer') %>

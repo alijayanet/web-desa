@@ -1,0 +1,106 @@
+<%- include('../partials/dashboard-header') %>
+
+  <div class="card-panel">
+    <div class="panel-header" style="flex-wrap: wrap; gap: 16px;">
+      <h3>Sistem Pengelolaan Aspirasi & Pengaduan Warga</h3>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <!-- Live Search -->
+        <input type="text" id="searchPengaduan" onkeyup="filterTable('searchPengaduan', 'tablePengaduan')" placeholder="🔍 Cari judul, pelapor, atau kategori..." class="form-control" style="max-width: 250px; padding: 8px 12px; font-size: 13px; border-radius: var(--radius-sm);">
+      </div>
+    </div>
+
+    <% if (success) { %>
+      <div class="alert alert-success">
+        <span>✓</span>
+        <div><%= success %></div>
+      </div>
+    <% } %>
+
+    <% if (error) { %>
+      <div class="alert alert-danger">
+        <span>⚠️</span>
+        <div><%= error %></div>
+      </div>
+    <% } %>
+
+    <div class="table-responsive">
+      <table class="table-custom" id="tablePengaduan">
+        <thead>
+          <tr>
+            <th>Kode</th>
+            <th>Pelapor</th>
+            <th>Kategori</th>
+            <th>Judul Pengaduan</th>
+            <th>Tanggal Masuk</th>
+            <th>Status</th>
+            <th style="text-align: center;">Tindakan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (daftarPengaduan && daftarPengaduan.length > 0) { %>
+            <% daftarPengaduan.forEach(function(p) { %>
+              <tr>
+                <td style="font-weight: 700; color: var(--primary);"><%= p.id %></td>
+                <td style="font-weight: 700;"><%= p.nama %></td>
+                <td><span style="background: rgba(13, 148, 136, 0.08); color: var(--secondary); padding: 4px 10px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 600;"><%= p.kategori %></span></td>
+                <td style="max-width: 260px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600;"><%= p.judul %></td>
+                <td><%= p.tanggal %></td>
+                <td>
+                  <% if (p.status === 'Selesai') { %>
+                    <span class="badge badge-success">✓ Selesai</span>
+                  <% } else if (p.status === 'Diproses') { %>
+                    <span class="badge badge-process">⏳ Diproses</span>
+                  <% } else { %>
+                    <span class="badge badge-pending">⏳ Pending</span>
+                  <% } %>
+                </td>
+                <td style="text-align: center;">
+                  <button onclick="openTanggapanModal('<%= p.id %>', '<%= p.status %>', '<%= p.tanggapan %>')" class="btn-sm btn-sm-primary" style="padding: 6px 12px; font-size: 11px;">
+                    💬 Tanggapi
+                  </button>
+                </td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr>
+              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">Belum ada laporan pengaduan masuk dari warga.</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MODAL TANGGAPAN PENGADUAN -->
+  <div class="modal-bg" id="tanggapanModal">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 style="font-size: 18px; font-weight: 800;">Tanggapi Laporan Warga</h3>
+        <button onclick="closeModal('tanggapanModal')" class="modal-close">&times;</button>
+      </div>
+      <form action="/dashboard/pengaduan/kelola" method="POST">
+        <input type="hidden" name="id" id="tanggapan_id">
+        
+        <div class="form-group">
+          <label for="tanggapan_status">UBAH STATUS LAPORAN</label>
+          <select name="status" id="tanggapan_status" class="form-control" required>
+            <option value="Pending">Tetap Antrean (Pending)</option>
+            <option value="Diproses">Mulai Ditindaklanjuti (Diproses)</option>
+            <option value="Selesai">Laporan Selesai Ditangani (Selesai)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="tanggapan_isi">RESPON RESMI KANTOR DESA</label>
+          <textarea name="tanggapan" id="tanggapan_isi" rows="5" class="form-control" placeholder="Tuliskan respon resmi kelurahan mengenai kendala yang diadukan... (opsional)"></textarea>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
+          <button type="button" onclick="closeModal('tanggapanModal')" class="btn-sm btn-sm-secondary" style="padding: 10px 20px;">Batal</button>
+          <button type="submit" class="btn-sm btn-sm-primary" style="padding: 10px 20px;">Simpan Tanggapan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<%- include('../partials/dashboard-footer') %>

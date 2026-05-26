@@ -1,0 +1,64 @@
+<%- include('partials/header') %>
+
+  <!-- Page Header -->
+  <section class="page-header" style="padding: 140px 0 40px 0; text-align: left;">
+    <div class="container" style="max-width: 800px;">
+      <div style="font-size: 13px; text-transform: uppercase; font-weight: 700; color: var(--primary); margin-bottom: 12px; letter-spacing: 0.5px;">
+        <%= berita.kategori %>
+      </div>
+      <h1 style="font-size: 32px; line-height: 1.3; color: var(--white); margin-bottom: 16px;"><%= berita.judul %></h1>
+      <div style="display: flex; gap: 20px; font-size: 13px; color: var(--text-light);">
+        <span>📅 Diterbitkan: <%= berita.tanggal %></span>
+        <span>✍️ Penulis: <%= berita.penulis %></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- News Content Section -->
+  <section style="padding: 60px 0 100px 0;">
+    <div class="container" style="max-width: 800px;">
+      
+      <!-- Article Card -->
+      <div class="profile-card" style="padding: 40px 48px; border: 1px solid rgba(15, 23, 42, 0.05); box-shadow: 0 4px 20px rgba(15, 23, 42, 0.02);">
+        
+        <!-- Foto Thumbnail Berita -->
+        <% if (berita.gambar && berita.gambar !== 'berita_default.jpg') { %>
+          <div style="margin-bottom: 32px;">
+            <img src="/uploads/<%= berita.gambar %>" alt="<%= berita.judul %>" 
+              style="width: 100%; max-height: 400px; object-fit: cover; border-radius: 12px; border: 1px solid rgba(15,23,42,0.08);">
+          </div>
+        <% } %>
+
+        <!-- Embed Video (YouTube / lainnya) -->
+        <% if (berita.embed_url && berita.embed_url.trim() !== '') { %>
+          <div style="margin-bottom: 32px;">
+            <div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 12px; border: 1px solid rgba(15,23,42,0.08);">
+              <iframe src="<%= berita.embed_url %>" 
+                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"
+                frameborder="0" 
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                allowfullscreen>
+              </iframe>
+            </div>
+            <p style="font-size: 12px; color: #94a3b8; margin-top: 8px; text-align: center;">📹 Video terkait berita ini</p>
+          </div>
+        <% } %>
+
+        <!-- Isi Konten Artikel -->
+        <div style="font-size: 16px; line-height: 1.8; color: var(--dark-light);">
+          <%- berita.konten %>
+        </div>
+        
+        <!-- Action Back Button -->
+        <div style="margin-top: 48px; border-top: 1px solid rgba(15, 23, 42, 0.08); padding-top: 24px;">
+          <a href="/berita" class="btn btn-secondary" style="font-size: 13px; padding: 10px 20px;">
+            &larr; Kembali ke Daftar Berita
+          </a>
+        </div>
+        
+      </div>
+      
+    </div>
+  </section>
+
+<%- include('partials/footer') %>

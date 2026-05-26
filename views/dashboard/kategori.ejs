@@ -1,0 +1,248 @@
+<%- include('../partials/dashboard-header') %>
+
+  <!-- Custom Styles for Tabs -->
+  <style>
+    .btn-tab {
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      background: rgba(15, 23, 42, 0.03);
+      border: 1px solid var(--border);
+      color: var(--text-dark);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn-tab:hover {
+      background: rgba(14, 165, 233, 0.05);
+      border-color: var(--primary);
+    }
+    .btn-tab.active {
+      background: var(--grad-primary);
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 4px 12px rgba(14, 165, 233, 0.2);
+    }
+  </style>
+
+  <div class="card-panel">
+    <div class="panel-header" style="flex-wrap: wrap; gap: 16px;">
+      <h3>🏷️ Manajemen Kategori Terpadu</h3>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+        <input type="text" id="searchKategori" onkeyup="filterTable('searchKategori', 'tableKategori')" placeholder="🔍 Cari nama kategori..." class="form-control" style="max-width: 230px; padding: 8px 12px; font-size: 13px; border-radius: var(--radius-sm);">
+        <button onclick="openModal('addCategoryModal')" class="btn-sm btn-sm-primary" style="padding: 8px 16px;">
+          ➕ Tambah Kategori Baru
+        </button>
+      </div>
+    </div>
+
+    <!-- Alert Message -->
+    <% if (success) { %>
+      <div class="alert alert-success">
+        <span>✓</span>
+        <div>
+          <% if (success === 'created') { %>
+            Kategori baru berhasil ditambahkan secara sukses!
+          <% } else if (success === 'updated') { %>
+            Kategori berhasil diperbarui dari database!
+          <% } else if (success === 'deleted') { %>
+            Kategori berhasil dihapus secara permanen dari sistem!
+          <% } else { %>
+            <%= success %>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+
+    <% if (error) { %>
+      <div class="alert alert-danger">
+        <span>⚠️</span>
+        <div>
+          <% if (error === 'missing_fields') { %>
+            Mohon lengkapi seluruh kolom formulir kategori.
+          <% } else if (error === 'notfound') { %>
+            Kategori tidak ditemukan di database.
+          <% } else { %>
+            <%= error %>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+
+    <!-- Interactive Tabs Filters -->
+    <div class="tabs-container" style="display: flex; gap: 10px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 8px;">
+      <button onclick="filterType('all')" id="tab-all" class="btn-tab active">🌐 Semua Kategori</button>
+      <button onclick="filterType('berita')" id="tab-berita" class="btn-tab">📰 Berita Desa</button>
+      <button onclick="filterType('pengaduan')" id="tab-pengaduan" class="btn-tab">📢 Pengaduan Warga</button>
+      <button onclick="filterType('keuangan_pendapatan')" id="tab-pendapatan" class="btn-tab">📈 APBDes (Pendapatan)</button>
+      <button onclick="filterType('keuangan_belanja')" id="tab-belanja" class="btn-tab">📉 APBDes (Belanja)</button>
+      <button onclick="filterType('keuangan_pembiayaan')" id="tab-pembiayaan" class="btn-tab">💸 APBDes (Pembiayaan)</button>
+    </div>
+
+    <div class="table-responsive">
+      <table class="table-custom" id="tableKategori">
+        <thead>
+          <tr>
+            <th style="width: 80px;">ID</th>
+            <th>Nama Kategori</th>
+            <th>Modul Peruntukan (Tipe)</th>
+            <th style="text-align: center; width: 200px;">Tindakan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (daftarKategori && daftarKategori.length > 0) { %>
+            <% daftarKategori.forEach(function(c) { %>
+              <tr class="category-row" data-tipe="<%= c.tipe %>">
+                <td style="font-weight: 700; color: var(--primary);"><%= c.id %></td>
+                <td style="font-weight: 700; font-size: 15px;"><%= c.nama %></td>
+                <td>
+                  <% if (c.tipe === 'berita') { %>
+                    <span class="badge badge-success" style="background: rgba(14, 165, 233, 0.08); color: var(--primary); font-size: 11px;">📰 Berita Desa</span>
+                  <% } else if (c.tipe === 'pengaduan') { %>
+                    <span class="badge badge-process" style="background: rgba(245, 158, 11, 0.08); color: var(--warning); font-size: 11px;">📢 Pengaduan Warga</span>
+                  <% } else if (c.tipe === 'keuangan_pendapatan') { %>
+                    <span class="badge badge-success" style="font-size: 11px;">📈 APBDes (Pendapatan)</span>
+                  <% } else if (c.tipe === 'keuangan_belanja') { %>
+                    <span class="badge badge-danger" style="font-size: 11px;">📉 APBDes (Belanja)</span>
+                  <% } else if (c.tipe === 'keuangan_pembiayaan') { %>
+                    <span class="badge badge-process" style="background: rgba(59, 130, 246, 0.08); color: var(--info); font-size: 11px;">💸 APBDes (Pembiayaan)</span>
+                  <% } else { %>
+                    <span class="badge badge-pending" style="font-size: 11px;"><%= c.tipe %></span>
+                  <% } %>
+                </td>
+                <td style="text-align: center;">
+                  <!-- Simpan data tersembunyi agar aman dipassing tanpa quote issue -->
+                  <div id="category-data-<%= c.id %>" data-nama="<%= c.nama %>" data-tipe="<%= c.tipe %>" style="display: none;"></div>
+                  
+                  <div style="display: flex; gap: 8px; justify-content: center; align-items: center;">
+                    <button onclick="triggerEditCategoryModal('<%= c.id %>')" class="btn-sm btn-sm-secondary" style="padding: 6px 12px; font-size: 11px; border-color: var(--border);">
+                      ✏️ Edit
+                    </button>
+                    <a href="/dashboard/kategori/hapus/<%= c.id %>" onclick="return confirm('Apakah Anda yakin ingin menghapus kategori ini secara permanen? Catatan: Menghapus kategori bawaan mungkin berdampak pada isian data saat ini.')" class="btn-sm btn-sm-secondary" style="padding: 6px 12px; font-size: 11px; color: #ef4444; border-color: rgba(239, 68, 68, 0.15); background: rgba(239, 68, 68, 0.03);">
+                      🗑️ Hapus
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr>
+              <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 30px;">Belum ada kategori yang ditambahkan.</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MODAL TAMBAH KATEGORI -->
+  <div class="modal-bg" id="addCategoryModal">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 style="font-size: 18px; font-weight: 800;">➕ Tambah Kategori</h3>
+        <button onclick="closeModal('addCategoryModal')" class="modal-close">&times;</button>
+      </div>
+      <form action="/dashboard/kategori" method="POST">
+        <div class="form-group">
+          <label for="add_nama">NAMA KATEGORI</label>
+          <input type="text" name="nama" id="add_nama" class="form-control" placeholder="Tuliskan nama kategori baru..." required>
+        </div>
+
+        <div class="form-group">
+          <label for="add_tipe">MODUL PERUNTUKAN (TIPE)</label>
+          <select name="tipe" id="add_tipe" class="form-control" required>
+            <option value="berita">📰 Berita & Artikel Desa</option>
+            <option value="pengaduan">📢 Aspirasi & Pengaduan Warga</option>
+            <option value="keuangan_pendapatan">📈 Keuangan APBDes: Pendapatan</option>
+            <option value="keuangan_belanja">📉 Keuangan APBDes: Belanja</option>
+            <option value="keuangan_pembiayaan">💸 Keuangan APBDes: Pembiayaan</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+          <button type="button" onclick="closeModal('addCategoryModal')" class="btn-sm btn-sm-secondary" style="padding: 10px 20px;">Batal</button>
+          <button type="submit" class="btn-sm btn-sm-primary" style="padding: 10px 20px;">Simpan Kategori</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL EDIT KATEGORI -->
+  <div class="modal-bg" id="editCategoryModal">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 style="font-size: 18px; font-weight: 800;">✏️ Edit Kategori</h3>
+        <button onclick="closeModal('editCategoryModal')" class="modal-close">&times;</button>
+      </div>
+      <form action="/dashboard/kategori/edit" method="POST">
+        <input type="hidden" name="id" id="edit_category_id">
+
+        <div class="form-group">
+          <label for="edit_category_nama">NAMA KATEGORI</label>
+          <input type="text" name="nama" id="edit_category_nama" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_category_tipe">MODUL PERUNTUKAN (TIPE)</label>
+          <select name="tipe" id="edit_category_tipe" class="form-control" required>
+            <option value="berita">📰 Berita & Artikel Desa</option>
+            <option value="pengaduan">📢 Aspirasi & Pengaduan Warga</option>
+            <option value="keuangan_pendapatan">📈 Keuangan APBDes: Pendapatan</option>
+            <option value="keuangan_belanja">📉 Keuangan APBDes: Belanja</option>
+            <option value="keuangan_pembiayaan">💸 Keuangan APBDes: Pembiayaan</option>
+          </select>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+          <button type="button" onclick="closeModal('editCategoryModal')" class="btn-sm btn-sm-secondary" style="padding: 10px 20px;">Batal</button>
+          <button type="submit" class="btn-sm btn-sm-primary" style="padding: 10px 20px;">💾 Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function filterType(type) {
+      // Perbarui class active tombol tab
+      document.querySelectorAll('.btn-tab').forEach(btn => btn.classList.remove('active'));
+      
+      let activeId = 'tab-all';
+      if (type === 'berita') activeId = 'tab-berita';
+      else if (type === 'pengaduan') activeId = 'tab-pengaduan';
+      else if (type === 'keuangan_pendapatan') activeId = 'tab-pendapatan';
+      else if (type === 'keuangan_belanja') activeId = 'tab-belanja';
+      else if (type === 'keuangan_pembiayaan') activeId = 'tab-pembiayaan';
+      
+      const activeTab = document.getElementById(activeId);
+      if (activeTab) activeTab.classList.add('active');
+
+      // Tampilkan/sembunyikan baris tabel berdasarkan modul
+      let visibleCount = 0;
+      document.querySelectorAll('.category-row').forEach(row => {
+        const rowType = row.getAttribute('data-tipe');
+        if (type === 'all' || rowType === type) {
+          row.style.display = '';
+          visibleCount++;
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+
+    function triggerEditCategoryModal(id) {
+      const container = document.getElementById('category-data-' + id);
+      const nama = container.getAttribute('data-nama');
+      const tipe = container.getAttribute('data-tipe');
+
+      document.getElementById('edit_category_id').value = id;
+      document.getElementById('edit_category_nama').value = nama;
+      document.getElementById('edit_category_tipe').value = tipe;
+
+      openModal('editCategoryModal');
+    }
+  </script>
+
+<%- include('../partials/dashboard-footer') %>

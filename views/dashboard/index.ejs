@@ -1,0 +1,221 @@
+<%- include('../partials/dashboard-header') %>
+
+  <!-- Welcome Banner -->
+  <div style="background: var(--grad-primary); border-radius: var(--radius-md); padding: 32px; color: var(--white); box-shadow: 0 4px 14px rgba(14, 165, 233, 0.15); margin-bottom: 32px; display: flex; justify-content: space-between; align-items: center;">
+    <div>
+      <h1 style="color: var(--white); font-size: 24px; font-weight: 800; margin-bottom: 8px;">Selamat Datang, <%= user.nama %>!</h1>
+      <p style="opacity: 0.9; font-size: 14px;">Platform ini dirancang khusus untuk mempermudah operasional birokrasi dan pelayanan publik <%= settings.nama_desa || 'Desa Ujunggebang' %> secara digital.</p>
+    </div>
+    <div style="font-size: 48px; opacity: 0.2; user-select: none;">🏛️</div>
+  </div>
+
+  <% if (error) { %>
+    <div class="alert alert-danger">
+      <span>⚠️</span>
+      <div><%= error %></div>
+    </div>
+  <% } %>
+
+  <% if (success) { %>
+    <div class="alert alert-success">
+      <span>✓</span>
+      <div><%= success %></div>
+    </div>
+  <% } %>
+
+  <!-- STATISTIK BERDASARKAN ROLE -->
+  
+  <% if (user.role === 'warga') { %>
+    <!-- STATISTIK WARGA -->
+    <div class="stats-grid">
+      <div class="card-stat">
+        <div class="stat-info">
+          <h5>Total Surat Saya</h5>
+          <h2><%= stats.totalSurat %></h2>
+        </div>
+        <div class="stat-icon">✉️</div>
+      </div>
+      
+      <div class="card-stat">
+        <div class="stat-info">
+          <h5>Surat Diproses</h5>
+          <h2><%= stats.suratPending %></h2>
+        </div>
+        <div class="stat-icon warning">⏳</div>
+      </div>
+
+      <div class="card-stat">
+        <div class="stat-info">
+          <h5>Surat Disetujui</h5>
+          <h2><%= stats.suratSelesai %></h2>
+        </div>
+        <div class="stat-icon success">✓</div>
+      </div>
+
+      <div class="card-stat">
+        <div class="stat-info">
+          <h5>Laporan Aktif</h5>
+          <h2><%= stats.pengaduanAktif %></h2>
+        </div>
+        <div class="stat-icon secondary">📢</div>
+      </div>
+    </div>
+
+    <!-- QUICK ACTIONS FOR CITIZENS -->
+    <div style="background: var(--white); border-radius: var(--radius-md); padding: 24px; margin-bottom: 32px; border: 1px solid var(--border); display: flex; gap: 20px; align-items: center;">
+      <h4 style="font-size: 15px; font-weight: 700; white-space: nowrap;">⚡ Jalan Pintas Layanan:</h4>
+      <a href="/dashboard/surat" class="btn-sm btn-sm-primary" style="padding: 10px 18px; font-size: 13px;">✉️ Buat Pengajuan Surat</a>
+      <a href="/dashboard/pengaduan" class="btn-sm btn-sm-secondary" style="padding: 10px 18px; font-size: 13px; background: rgba(13, 148, 136, 0.08); color: var(--secondary);">📢 Ajukan Laporan / Pengaduan</a>
+    </div>
+
+  <% } else { %>
+    <!-- STATISTIK ADMINISTRATOR (Staff, Sekdes, Kades) -->
+    <div class="stats-grid">
+      <div class="card-stat">
+        <div class="stat-info">
+          <h5>Total Penduduk</h5>
+          <h2><%= stats.totalPenduduk %></h2>
+        </div>
+        <div class="stat-icon">👥</div>
+      </div>
+
+      <div class="card-stat">
+        <div class="stat-info">
+          <h5>Surat Masuk</h5>
+          <h2><%= stats.totalSurat %></h2>
+        </div>
+        <div class="stat-icon secondary">✉️</div>
+      </div>
+
+      <% if (user.role === 'staff') { %>
+        <div class="card-stat">
+          <div class="stat-info">
+            <h5>Pending Staff</h5>
+            <h2><%= stats.suratPendingStaff %></h2>
+          </div>
+          <div class="stat-icon warning">⏳</div>
+        </div>
+      <% } else if (user.role === 'sekdes') { %>
+        <div class="card-stat">
+          <div class="stat-info">
+            <h5>Pending Sekdes</h5>
+            <h2><%= stats.suratPendingSekdes %></h2>
+          </div>
+          <div class="stat-icon warning">⏳</div>
+        </div>
+      <% } else if (user.role === 'kades') { %>
+        <div class="card-stat">
+          <div class="stat-info">
+            <h5>Pending <%= settings.sebutan_kades || 'Kepala Desa' %> (TTD)</h5>
+            <h2><%= stats.suratPendingKades %></h2>
+          </div>
+          <div class="stat-icon warning">✍️</div>
+        </div>
+      <% } %>
+
+      <div class="card-stat">
+        <div class="stat-info">
+          <h5>Laporan Aktif</h5>
+          <h2><%= stats.pengaduanPending + stats.pengaduanDiproses %></h2>
+        </div>
+        <div class="stat-icon success">📢</div>
+      </div>
+    </div>
+  <% } %>
+
+  <!-- RECENT LISTINGS -->
+  <div class="dashboard-row">
+    
+    <!-- Bagian Surat Terbaru -->
+    <div class="card-panel">
+      <div class="panel-header">
+        <h3><% if (user.role === 'warga') { %>Pengajuan Surat Saya<% } else { %>Pengajuan Surat Terbaru<% } %></h3>
+        <% if (user.role === 'warga') { %>
+          <a href="/dashboard/surat" class="btn-sm btn-sm-secondary">Lihat Semua</a>
+        <% } else { %>
+          <a href="/dashboard/surat/kelola" class="btn-sm btn-sm-secondary">Kelola Surat</a>
+        <% } %>
+      </div>
+      
+      <div class="table-responsive">
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th>Kode Pengajuan</th>
+              <th>Pemohon</th>
+              <th>Jenis Surat</th>
+              <th>Tanggal</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (recentSurat && recentSurat.length > 0) { %>
+              <% recentSurat.forEach(function(s) { %>
+                <tr>
+                  <td style="font-weight: 700; color: var(--primary);"><%= s.id %></td>
+                  <td><%= s.nama %></td>
+                  <td style="font-weight: 600;"><%= s.jenis_surat %></td>
+                  <td><%= s.tanggal_pengajuan %></td>
+                  <td>
+                    <% if (s.status === 'Disetujui') { %>
+                      <span class="badge badge-success">Selesai</span>
+                    <% } else if (s.status === 'Ditolak') { %>
+                      <span class="badge badge-danger">Ditolak</span>
+                    <% } else { %>
+                      <span class="badge badge-pending">Diproses</span>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            <% } else { %>
+              <tr>
+                <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 20px;">Belum ada riwayat pengajuan surat.</td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Bagian Pengaduan Terbaru -->
+    <div class="card-panel">
+      <div class="panel-header">
+        <h3><% if (user.role === 'warga') { %>Laporan Saya<% } else { %>Laporan Pengaduan Masuk<% } %></h3>
+        <% if (user.role === 'warga') { %>
+          <a href="/dashboard/pengaduan" class="btn-sm btn-sm-secondary">Semua Laporan</a>
+        <% } else { %>
+          <a href="/dashboard/pengaduan/kelola" class="btn-sm btn-sm-secondary">Tanggapi</a>
+        <% } %>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <% if (recentPengaduan && recentPengaduan.length > 0) { %>
+          <% recentPengaduan.forEach(function(p) { %>
+            <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 16px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                <span style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase;"><%= p.kategori %></span>
+                <% if (p.status === 'Selesai') { %>
+                  <span class="badge badge-success" style="font-size: 9px; padding: 2px 6px;">Selesai</span>
+                <% } else if (p.status === 'Diproses') { %>
+                  <span class="badge badge-process" style="font-size: 9px; padding: 2px 6px;">Diproses</span>
+                <% } else { %>
+                  <span class="badge badge-pending" style="font-size: 9px; padding: 2px 6px;">Pending</span>
+                <% } %>
+              </div>
+              <h4 style="font-size: 14px; margin-bottom: 4px; font-weight: 700;"><%= p.judul %></h4>
+              <p style="font-size: 12px; color: var(--text-muted); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; line-height: 1.4;"><%= p.isi %></p>
+              <div style="margin-top: 8px; display: flex; justify-content: space-between; align-items: center; font-size: 11px; color: var(--text-light);">
+                <span>Oleh: <%= p.nama %></span>
+                <span>📅 <%= p.tanggal %></span>
+              </div>
+            </div>
+          <% }); %>
+        <% } else { %>
+          <div style="text-align: center; color: var(--text-muted); padding: 20px;">Belum ada laporan pengaduan.</div>
+        <% } %>
+      </div>
+    </div>
+
+  </div>
+
+<%- include('../partials/dashboard-footer') %>

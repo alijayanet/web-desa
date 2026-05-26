@@ -1,0 +1,340 @@
+<%- include('partials/header') %>
+
+  <!-- Extract data untuk Chart.js di frontend -->
+  <%
+    let totalPendapatanAnggaran = 0;
+    let totalPendapatanRealisasi = 0;
+    let totalBelanjaAnggaran = 0;
+    let totalBelanjaRealisasi = 0;
+    
+    let labelsPendapatan = [];
+    let dataPendapatanAnggaran = [];
+    let dataPendapatanRealisasi = [];
+
+    let labelsBelanja = [];
+    let dataBelanjaAnggaran = [];
+    let dataBelanjaRealisasi = [];
+
+    keuangan.forEach(function(k) {
+      if (k.kategori === 'Pendapatan') {
+        totalPendapatanAnggaran += k.anggaran;
+        totalPendapatanRealisasi += k.realisasi;
+        labelsPendapatan.push(k.sub_kategori);
+        dataPendapatanAnggaran.push(k.anggaran);
+        dataPendapatanRealisasi.push(k.realisasi);
+      } else if (k.kategori === 'Belanja') {
+        totalBelanjaAnggaran += k.anggaran;
+        totalBelanjaRealisasi += k.realisasi;
+        labelsBelanja.push(k.sub_kategori);
+        dataBelanjaAnggaran.push(k.anggaran);
+        dataBelanjaRealisasi.push(k.realisasi);
+      }
+    });
+  %>
+
+  <main style="max-width: 1200px; margin: 40px auto; padding: 0 20px;">
+    
+    <!-- Hero Banner -->
+    <div style="background: var(--grad-primary); border-radius: var(--radius-md); padding: 48px 32px; color: var(--white); box-shadow: 0 10px 30px rgba(14, 165, 233, 0.15); margin-bottom: 40px; text-align: center; position: relative; overflow: hidden;">
+      <div style="position: relative; z-index: 2;">
+        <span style="font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; background: rgba(255, 255, 255, 0.15); padding: 6px 16px; border-radius: 20px;">TRANSPARANSI DIGITAL</span>
+        <h1 style="color: var(--white); font-size: 32px; font-weight: 800; margin-top: 16px; margin-bottom: 8px;">Transparansi Keuangan Desa (APBDes)</h1>
+        <p style="opacity: 0.9; font-size: 16px; max-width: 700px; margin: 0 auto; line-height: 1.6;">Laporan Anggaran Pendapatan dan Belanja Desa (APBDes) <%= settings.nama_desa || 'Desa' %> Tahun Anggaran <%= tahun || new Date().getFullYear() %> secara transparan, jujur, dan akuntabel demi mewujudkan pembangunan desa bersih.</p>
+      </div>
+      <div style="position: absolute; right: -50px; bottom: -50px; font-size: 200px; opacity: 0.05; user-select: none;">📈</div>
+    </div>
+
+    <!-- KADES STATEMENT & FINANCIAL SNAPSHOT -->
+    <div style="display: grid; grid-template-columns: 1fr; lg: 1.2fr; gap: 32px; margin-bottom: 48px;">
+      
+      <!-- Pernyataan Kepala Desa / Kuwu -->
+      <div class="card-panel" style="display: flex; gap: 24px; flex-wrap: wrap; align-items: center; background: var(--white); border: 1px solid var(--border); box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03); border-radius: var(--radius-md); padding: 32px;">
+        <div style="width: 180px; height: 240px; border-radius: var(--radius-sm); overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.08); border: 4px solid var(--white); flex-shrink: 0;">
+          <img src="/img/kades.png" alt="Kepala Desa Ujunggebang" style="width: 100%; height: 100%; object-fit: cover;">
+        </div>
+        <div style="flex: 1; min-width: 250px;">
+          <span style="font-size: 24px; color: var(--primary);">“</span>
+          <p style="font-size: 14px; font-style: italic; color: var(--text-dark); line-height: 1.6; margin-bottom: 16px; font-weight: 500;">
+            Transparansi anggaran adalah wujud amanah dan tanggung jawab kami selaku Pemerintah Desa Ujunggebang kepada masyarakat. Setiap rupiah uang rakyat yang dikelola akan kami pergunakan seutuhnya untuk kemakmuran tani, pembangunan infrastruktur, dan digitalisasi pelayanan publik yang inklusif. Bersama gotong royong, kita bangun Ujunggebang yang mandiri dan unggul!
+          </p>
+          <h4 style="font-size: 16px; font-weight: 800; color: var(--text-dark);"><%= settings.kades || 'H. Sukarno, M.Si' %></h4>
+          <p style="font-size: 12px; color: var(--primary); font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-top: 2px;"><%= settings.sebutan_kades || 'Kepala Desa' %> <%= settings.nama_desa || 'Desa' %></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOTAL ANGGARAN CARDS -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; margin-bottom: 48px;">
+      
+      <!-- Pendapatan Card -->
+      <div class="card-panel" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: var(--white); border: none; box-shadow: 0 10px 25px rgba(16, 185, 129, 0.15); padding: 32px; border-radius: var(--radius-md); position: relative; overflow: hidden;">
+        <div style="position: relative; z-index: 2;">
+          <h4 style="font-size: 14px; text-transform: uppercase; font-weight: 800; opacity: 0.9; letter-spacing: 1px; margin-bottom: 8px;">TOTAL PENDAPATAN DESA</h4>
+          <h2 style="font-size: 28px; font-weight: 800; color: var(--white); margin-bottom: 12px;">Rp <%= totalPendapatanAnggaran.toLocaleString('id-ID') %></h2>
+          <div style="background: rgba(255, 255, 255, 0.15); padding: 12px; border-radius: var(--radius-sm); font-size: 12px;">
+            <strong>Realisasi Penyerapan:</strong> Rp <%= totalPendapatanRealisasi.toLocaleString('id-ID') %> (<%= ((totalPendapatanRealisasi/totalPendapatanAnggaran)*100).toFixed(1) %>%)
+          </div>
+        </div>
+        <div style="position: absolute; right: -20px; bottom: -20px; font-size: 120px; opacity: 0.08; user-select: none;">📈</div>
+      </div>
+
+      <!-- Belanja Card -->
+      <div class="card-panel" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); color: var(--white); border: none; box-shadow: 0 10px 25px rgba(239, 68, 68, 0.15); padding: 32px; border-radius: var(--radius-md); position: relative; overflow: hidden;">
+        <div style="position: relative; z-index: 2;">
+          <h4 style="font-size: 14px; text-transform: uppercase; font-weight: 800; opacity: 0.9; letter-spacing: 1px; margin-bottom: 8px;">TOTAL BELANJA DESA</h4>
+          <h2 style="font-size: 28px; font-weight: 800; color: var(--white); margin-bottom: 12px;">Rp <%= totalBelanjaAnggaran.toLocaleString('id-ID') %></h2>
+          <div style="background: rgba(255, 255, 255, 0.15); padding: 12px; border-radius: var(--radius-sm); font-size: 12px;">
+            <strong>Realisasi Penyerapan:</strong> Rp <%= totalBelanjaRealisasi.toLocaleString('id-ID') %> (<%= ((totalBelanjaRealisasi/totalBelanjaAnggaran)*100).toFixed(1) %>%)
+          </div>
+        </div>
+        <div style="position: absolute; right: -20px; bottom: -20px; font-size: 120px; opacity: 0.08; user-select: none;">📉</div>
+      </div>
+    </div>
+
+    <!-- MODERN CHART VISUALIZATIONS -->
+    <div style="display: grid; grid-template-columns: 1fr; lg: 1fr 1fr; gap: 32px; margin-bottom: 48px;">
+      
+      <!-- Bar Chart Comparing Anggaran vs Realisasi -->
+      <div class="card-panel" style="padding: 24px; background: var(--white); border: 1px solid var(--border); box-shadow: 0 4px 14px rgba(0,0,0,0.02); border-radius: var(--radius-md);">
+        <h3 style="font-size: 16px; font-weight: 800; margin-bottom: 20px; color: var(--text-dark);">📊 Perbandingan Anggaran & Realisasi (Rupiah)</h3>
+        <div style="position: relative; height: 320px; width: 100%;">
+          <canvas id="barChartSummary"></canvas>
+        </div>
+      </div>
+
+      <!-- Doughnut Charts Row -->
+      <div style="display: grid; grid-template-columns: 1fr; sm: 1fr 1fr; gap: 24px;">
+        <!-- Pie Chart Pendapatan -->
+        <div class="card-panel" style="padding: 20px; background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-md);">
+          <h3 style="font-size: 14px; font-weight: 800; margin-bottom: 16px; color: var(--text-dark);">📈 Rincian Sumber Pendapatan</h3>
+          <div style="position: relative; height: 230px; width: 100%;">
+            <canvas id="chartPendapatan"></canvas>
+          </div>
+        </div>
+
+        <!-- Pie Chart Belanja -->
+        <div class="card-panel" style="padding: 20px; background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-md);">
+          <h3 style="font-size: 14px; font-weight: 800; margin-bottom: 16px; color: var(--text-dark);">📉 Rincian Belanja Sektor</h3>
+          <div style="position: relative; height: 230px; width: 100%;">
+            <canvas id="chartBelanja"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- DETAIL BUDGET TABLE -->
+    <div class="card-panel" style="padding: 32px; background: var(--white); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: 0 4px 20px rgba(0,0,0,0.02);">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px;">
+        <div>
+          <h3 style="font-size: 18px; font-weight: 800; color: var(--text-dark);">📋 Rincian Transparansi Dana Desa & Anggaran Lengkap (APBDes)</h3>
+          <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Detail lengkap anggaran terdaftar serta penyerapan yang terverifikasi di lapangan.</p>
+        </div>
+        <input type="text" id="searchKeuanganPublic" onkeyup="filterTable('searchKeuanganPublic', 'tableKeuanganPublic')" placeholder="🔍 Cari anggaran/bidang..." class="form-control" style="max-width: 250px; padding: 8px 12px; font-size: 13px;">
+      </div>
+
+      <div class="table-responsive">
+        <table class="table-custom" id="tableKeuanganPublic" style="width: 100%;">
+          <thead>
+            <tr>
+              <th style="width: 120px;">Tipe</th>
+              <th>Deskripsi Anggaran / Sektor Pengeluaran</th>
+              <th style="text-align: right;">Jumlah Anggaran</th>
+              <th style="text-align: right;">Realisasi Penyerapan</th>
+              <th style="text-align: center; width: 140px;">Capaian Cap</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% keuangan.forEach(function(k) { %>
+              <% 
+                const persentase = k.anggaran > 0 ? ((k.realisasi / k.anggaran) * 100).toFixed(1) : 0; 
+                let badgeClass = 'badge-success';
+                if (persentase < 50) badgeClass = 'badge-danger';
+                else if (persentase < 90) badgeClass = 'badge-pending';
+              %>
+              <tr>
+                <td>
+                  <% if (k.kategori === 'Pendapatan') { %>
+                    <span class="badge badge-success" style="font-size: 11px;">📈 Pendapatan</span>
+                  <% } else if (k.kategori === 'Belanja') { %>
+                    <span class="badge badge-danger" style="font-size: 11px;">📉 Belanja</span>
+                  <% } else { %>
+                    <span class="badge badge-process" style="font-size: 11px; background: rgba(59, 130, 246, 0.08); color: var(--info);">💸 Pembiayaan</span>
+                  <% } %>
+                </td>
+                <td style="font-weight: 700; color: var(--text-dark);"><%= k.sub_kategori %></td>
+                <td style="text-align: right; font-weight: 600;">Rp <%= k.anggaran.toLocaleString('id-ID') %></td>
+                <td style="text-align: right; font-weight: 600; color: var(--secondary);">Rp <%= k.realisasi.toLocaleString('id-ID') %></td>
+                <td style="text-align: center;">
+                  <span class="badge <%= badgeClass %>" style="font-size: 11px;"><%= persentase %>%</span>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Chart.js Library via CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. DATA PREPARATION (Serialized from EJS variables)
+      const totalPendapatanAnggaran = <%= totalPendapatanAnggaran %>;
+      const totalPendapatanRealisasi = <%= totalPendapatanRealisasi %>;
+      const totalBelanjaAnggaran = <%= totalBelanjaAnggaran %>;
+      const totalBelanjaRealisasi = <%= totalBelanjaRealisasi %>;
+
+      const labelsPendapatan = <%- JSON.stringify(labelsPendapatan) %>;
+      const dataPendapatanAnggaran = <%- JSON.stringify(dataPendapatanAnggaran) %>;
+      const dataPendapatanRealisasi = <%- JSON.stringify(dataPendapatanRealisasi) %>;
+
+      const labelsBelanja = <%- JSON.stringify(labelsBelanja) %>;
+      const dataBelanjaAnggaran = <%- JSON.stringify(dataBelanjaAnggaran) %>;
+      const dataBelanjaRealisasi = <%- JSON.stringify(dataBelanjaRealisasi) %>;
+
+      // 2. CHART 1: COMPARISON BAR CHART (ANGGARAN VS REALISASI)
+      const ctxSummary = document.getElementById('barChartSummary').getContext('2d');
+      new Chart(ctxSummary, {
+        type: 'bar',
+        data: {
+          labels: ['Total Pendapatan', 'Total Belanja'],
+          datasets: [
+            {
+              label: 'Anggaran APBDes',
+              data: [totalPendapatanAnggaran, totalBelanjaAnggaran],
+              backgroundColor: ['rgba(16, 185, 129, 0.4)', 'rgba(239, 68, 68, 0.4)'],
+              borderColor: ['#10b981', '#ef4444'],
+              borderWidth: 2,
+              borderRadius: 6
+            },
+            {
+              label: 'Realisasi Fisik',
+              data: [totalPendapatanRealisasi, totalBelanjaRealisasi],
+              backgroundColor: ['#10b981', '#ef4444'],
+              borderColor: ['#059669', '#dc2626'],
+              borderWidth: 2,
+              borderRadius: 6
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                font: { family: 'Inter, system-ui', weight: 600 }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                callback: function(value) {
+                  return 'Rp ' + (value / 1000000) + ' Jt';
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // 3. CHART 2: PENDAPATAN BREAKDOWN DOUGHNUT
+      const ctxPendapatan = document.getElementById('chartPendapatan').getContext('2d');
+      new Chart(ctxPendapatan, {
+        type: 'doughnut',
+        data: {
+          labels: labelsPendapatan,
+          datasets: [{
+            data: dataPendapatanAnggaran,
+            backgroundColor: [
+              '#10b981', // green
+              '#0ea5e9', // blue
+              '#f59e0b', // orange
+              '#8b5cf6', // purple
+              '#ec4899'  // pink
+            ],
+            borderWidth: 2,
+            hoverOffset: 12
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                boxWidth: 12,
+                font: { family: 'Inter, system-ui', size: 10, weight: 600 }
+              }
+            }
+          }
+        }
+      });
+
+      // 4. CHART 3: BELANJA BREAKDOWN DOUGHNUT
+      const ctxBelanja = document.getElementById('chartBelanja').getContext('2d');
+      new Chart(ctxBelanja, {
+        type: 'doughnut',
+        data: {
+          labels: labelsBelanja,
+          datasets: [{
+            data: dataBelanjaAnggaran,
+            backgroundColor: [
+              '#ef4444', // red
+              '#f97316', // orange-red
+              '#eab308', // yellow
+              '#06b6d4', // cyan
+              '#6366f1'  // indigo
+            ],
+            borderWidth: 2,
+            hoverOffset: 12
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                boxWidth: 12,
+                font: { family: 'Inter, system-ui', size: 10, weight: 600 }
+              }
+            }
+          }
+        }
+      });
+    });
+
+    // Helper Live Search
+    function filterTable(inputId, tableId) {
+      const input = document.getElementById(inputId);
+      const filter = input.value.toUpperCase();
+      const table = document.getElementById(tableId);
+      const tr = table.getElementsByTagName("tr");
+
+      for (let i = 1; i < tr.length; i++) {
+        let match = false;
+        const tds = tr[i].getElementsByTagName("td");
+        for (let j = 0; j < tds.length; j++) {
+          if (tds[j]) {
+            const txtValue = tds[j].textContent || tds[j].innerText;
+            if (txtValue.toUpperCase().indexOf(filter) > -1) {
+              match = true;
+              break;
+            }
+          }
+        }
+        tr[i].style.display = match ? "" : "none";
+      }
+    }
+  </script>
+
+<%- include('partials/footer') %>

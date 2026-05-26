@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard Desa Digital - <%= settings.nama_desa || 'Desa Ujunggebang' %></title>
+  <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body>
+
+  <div class="dashboard-layout">
+    <%- include('dashboard-sidebar') %>
+    
+    <div class="main-content">
+      
+      <!-- Top Header -->
+      <header class="dashboard-header">
+        <div class="page-title">
+          <h2><%= settings.nama_desa || 'Desa Ujunggebang' %> Digital Portal</h2>
+        </div>
+        <div class="header-actions">
+          <a href="/" class="header-btn-home" target="_blank">🌐 Website Publik</a>
+          <% const navLinks = (settings && Array.isArray(settings.nav_links)) ? settings.nav_links : []; %>
+          <% if (navLinks.length > 0) { %>
+            <% navLinks.forEach(function(link) { %>
+              <% if (link && link.url && link.label) { %>
+                <a href="<%= link.url %>" class="header-btn-home" target="_blank"><%= link.label %></a>
+              <% } %>
+            <% }); %>
+          <% } %>
+          <span style="font-size: 13px; font-weight: 500; color: var(--text-muted); background: #f1f5f9; padding: 6px 12px; border-radius: 20px; border: 1px solid var(--border);">
+            📅 <%= new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %>
+          </span>
+        </div>
+      </header>
+
+      <div class="dashboard-body">

@@ -1,0 +1,70 @@
+<%- include('../partials/dashboard-header') %>
+
+  <div class="card-panel" style="max-width: 800px; margin: 0 auto;">
+    <div class="panel-header">
+      <h3>Data Kependudukan Terverifikasi</h3>
+      <span style="background: rgba(16, 185, 129, 0.08); color: var(--success); font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid rgba(16, 185, 129, 0.15);">
+        ✓ Terverifikasi Dukcapil Desa
+      </span>
+    </div>
+
+    <% if (profil) { %>
+      <div style="background: rgba(14, 165, 233, 0.04); border: 1px solid rgba(14, 165, 233, 0.1); border-radius: var(--radius-sm); padding: 20px; margin-bottom: 28px; display: flex; gap: 16px; align-items: center;">
+        <div style="font-size: 40px;">💳</div>
+        <div>
+          <h4 style="font-size: 16px; font-weight: 800; color: var(--dark);"><%= profil.nama %></h4>
+          <p style="font-size: 13px; color: var(--text-muted); margin-top: 2px;">NIK: <%= profil.nik %> | No. KK: <%= profil.no_kk %></p>
+        </div>
+      </div>
+
+      <div class="profile-warga-grid">
+        <div class="profile-info-item">
+          <label>Tempat, Tanggal Lahir</label>
+          <span><%= profil.tempat_lahir %>, <%= new Date(profil.tanggal_lahir).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) %></span>
+        </div>
+
+        <div class="profile-info-item">
+          <label>Jenis Kelamin</label>
+          <span><%= profil.gender %></span>
+        </div>
+
+        <div class="profile-info-item">
+          <label>Agama</label>
+          <span><%= profil.agama %></span>
+        </div>
+
+        <div class="profile-info-item">
+          <label>Status Perkawinan</label>
+          <span><%= profil.status_kawin %></span>
+        </div>
+
+        <div class="profile-info-item">
+          <label>Pekerjaan Utama</label>
+          <span><%= profil.pekerjaan %></span>
+        </div>
+
+        <div class="profile-info-item">
+          <label>Pendidikan Terakhir</label>
+          <span><%= profil.pendidikan %></span>
+        </div>
+
+        <div class="profile-info-item" style="grid-column: span 2;">
+          <label>Alamat Lengkap KTP</label>
+          <span><%= profil.alamat %>, Dusun/Blok <%= profil.dusun %>, Desa Ujunggebang, Kec. Sukra, Kab. Indramayu</span>
+        </div>
+      </div>
+
+      <div style="margin-top: 32px; font-size: 12px; color: var(--text-muted); border-top: 1px solid var(--border); padding-top: 16px; text-align: center;">
+        Jika terdapat kekeliruan data kependudukan di atas, mohon segera melapor ke Staff Kantor Desa Ujunggebang dengan membawa KTP dan Kartu Keluarga asli untuk perbaikan data.
+      </div>
+
+    <% } else { %>
+      <div style="text-align: center; padding: 40px; color: var(--danger);">
+        <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+        <h3>Kesalahan Data</h3>
+        <p>Data kependudukan Anda tidak ditemukan di sistem kependudukan desa. Silakan hubungi staff kantor desa.</p>
+      </div>
+    <% } %>
+  </div>
+
+<%- include('../partials/dashboard-footer') %>

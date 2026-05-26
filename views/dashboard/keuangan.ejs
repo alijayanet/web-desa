@@ -1,0 +1,298 @@
+<%- include('../partials/dashboard-header') %>
+
+  <div class="card-panel">
+    <div class="panel-header" style="flex-wrap: wrap; gap: 16px;">
+      <h3>Sistem Transparansi APBDes & Keuangan Desa</h3>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+        <input type="text" id="searchKeuangan" onkeyup="filterTable('searchKeuangan', 'tableKeuangan')" placeholder="🔍 Cari sub kategori atau kategori..." class="form-control" style="max-width: 230px; padding: 8px 12px; font-size: 13px; border-radius: var(--radius-sm);">
+        <button onclick="openModal('addKeuanganModal')" class="btn-sm btn-sm-primary" style="padding: 8px 16px;">
+          ➕ Tambah Rekor Keuangan
+        </button>
+      </div>
+    </div>
+
+    <% if (success) { %>
+      <div class="alert alert-success">
+        <span>✓</span>
+        <div>
+          <% if (success === 'created') { %>
+            Rekor anggaran keuangan berhasil ditambahkan ke database!
+          <% } else if (success === 'updated') { %>
+            Rekor anggaran keuangan berhasil diperbarui secara sukses!
+          <% } else if (success === 'deleted') { %>
+            Rekor anggaran keuangan berhasil dihapus secara permanen!
+          <% } else { %>
+            <%= success %>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+
+    <% if (error) { %>
+      <div class="alert alert-danger">
+        <span>⚠️</span>
+        <div>
+          <% if (error === 'missing_fields') { %>
+            Mohon lengkapi semua kolom formulir keuangan.
+          <% } else if (error === 'notfound') { %>
+            Rekor anggaran tidak ditemukan di database.
+          <% } else { %>
+            <%= error %>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+
+    <div class="table-responsive">
+      <table class="table-custom" id="tableKeuangan">
+        <thead>
+          <tr>
+            <th style="width: 80px;">Tahun</th>
+            <th>Kategori</th>
+            <th>Sub Kategori / Sumber Dana</th>
+            <th style="text-align: right;">Jumlah Anggaran</th>
+            <th style="text-align: right;">Realisasi Belanja</th>
+            <th style="text-align: center; width: 120px;">Persentase</th>
+            <th style="text-align: center; width: 160px;">Tindakan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (daftarKeuangan && daftarKeuangan.length > 0) { %>
+            <% daftarKeuangan.forEach(function(k) { %>
+              <% 
+                const persentase = k.anggaran > 0 ? ((k.realisasi / k.anggaran) * 100).toFixed(1) : 0; 
+                let badgeClass = 'badge-success';
+                if (persentase < 50) badgeClass = 'badge-danger';
+                else if (persentase < 90) badgeClass = 'badge-pending';
+              %>
+              <tr>
+                <td style="font-weight: 700; color: var(--primary);"><%= k.tahun %></td>
+                <td>
+                  <% if (k.kategori === 'Pendapatan') { %>
+                    <span class="badge badge-success" style="font-size: 11px;">📈 Pendapatan</span>
+                  <% } else if (k.kategori === 'Belanja') { %>
+                    <span class="badge badge-danger" style="font-size: 11px;">📉 Belanja</span>
+                  <% } else { %>
+                    <span class="badge badge-process" style="font-size: 11px; background: rgba(59, 130, 246, 0.08); color: var(--info);">💸 Pembiayaan</span>
+                  <% } %>
+                </td>
+                <td style="font-weight: 600;"><%= k.sub_kategori %></td>
+                <td style="text-align: right; font-weight: 600;">Rp <%= k.anggaran.toLocaleString('id-ID') %></td>
+                <td style="text-align: right; font-weight: 600; color: var(--secondary);">Rp <%= k.realisasi.toLocaleString('id-ID') %></td>
+                <td style="text-align: center;">
+                  <span class="badge <%= badgeClass %>" style="font-size: 11px;"><%= persentase %>%</span>
+                </td>
+                <td style="text-align: center;">
+                  <!-- Simpan data tersembunyi agar aman dipassing tanpa quote issue -->
+                  <div id="finance-data-<%= k.id %>" data-tahun="<%= k.tahun %>" data-kategori="<%= k.kategori %>" data-sub="<%= k.sub_kategori %>" data-anggaran="<%= k.anggaran %>" data-realisasi="<%= k.realisasi %>" style="display: none;"></div>
+                  
+                  <div style="display: flex; gap: 8px; justify-content: center; align-items: center;">
+                    <button onclick="triggerEditFinanceModal('<%= k.id %>')" class="btn-sm btn-sm-secondary" style="padding: 6px 12px; font-size: 11px; border-color: var(--border);">
+                      ✏️ Edit
+                    </button>
+                    <a href="/dashboard/keuangan/hapus/<%= k.id %>" onclick="return confirm('Apakah Anda yakin ingin menghapus rekor APBDes ini secara permanen?')" class="btn-sm btn-sm-secondary" style="padding: 6px 12px; font-size: 11px; color: #ef4444; border-color: rgba(239, 68, 68, 0.15); background: rgba(239, 68, 68, 0.03);">
+                      🗑️ Hapus
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr>
+              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">Belum ada rekor anggaran keuangan APBDes tersimpan.</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MODAL TAMBAH REKOR KEUANGAN -->
+  <div class="modal-bg" id="addKeuanganModal">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 style="font-size: 18px; font-weight: 800;">➕ Tambah Anggaran APBDes</h3>
+        <button onclick="closeModal('addKeuanganModal')" class="modal-close">&times;</button>
+      </div>
+      <form action="/dashboard/keuangan" method="POST">
+        <div class="form-group">
+          <label for="add_tahun">TAHUN ANGGARAN</label>
+          <input type="number" name="tahun" id="add_tahun" value="2026" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label for="add_kategori">KATEGORI</label>
+          <select name="kategori" id="add_kategori" class="form-control" required>
+            <option value="Pendapatan">Pendapatan Desa (Pendapatan)</option>
+            <option value="Belanja">Belanja Desa (Pengeluaran/Belanja)</option>
+            <option value="Pembiayaan">Pembiayaan Desa (SILPA/Lainnya)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="add_sub_kategori">SUB KATEGORI / SUMBER DANA / BIDANG</label>
+          <select name="sub_kategori" id="add_sub_kategori" class="form-control" required>
+            <% if (typeof kategoriKeuangan !== 'undefined' && kategoriKeuangan.length > 0) { %>
+              <% kategoriKeuangan.forEach(function(kat) { %>
+                <option value="<%= kat.nama %>" data-tipe="<%= kat.tipe %>"><%= kat.nama %></option>
+              <% }); %>
+            <% } else { %>
+              <option value="Dana Desa (DD)" data-tipe="keuangan_pendapatan">Dana Desa (DD)</option>
+              <option value="Alokasi Dana Desa (ADD)" data-tipe="keuangan_pendapatan">Alokasi Dana Desa (ADD)</option>
+              <option value="Penyelenggaraan Pemerintahan" data-tipe="keuangan_belanja">Penyelenggaraan Pemerintahan</option>
+              <option value="Pembangunan Infrastruktur" data-tipe="keuangan_belanja">Pembangunan Infrastruktur</option>
+              <option value="SILPA Tahun Sebelumnya" data-tipe="keuangan_pembiayaan">SILPA Tahun Sebelumnya</option>
+            <% } %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="add_anggaran">JUMLAH ANGGARAN (Rp)</label>
+          <input type="number" name="anggaran" id="add_anggaran" min="0" step="any" class="form-control" placeholder="Contoh: 150000000" required>
+        </div>
+
+        <div class="form-group">
+          <label for="add_realisasi">REALISASI PENYERAPAN (Rp)</label>
+          <input type="number" name="realisasi" id="add_realisasi" min="0" step="any" class="form-control" placeholder="Contoh: 145000000" required>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+          <button type="button" onclick="closeModal('addKeuanganModal')" class="btn-sm btn-sm-secondary" style="padding: 10px 20px;">Batal</button>
+          <button type="submit" class="btn-sm btn-sm-primary" style="padding: 10px 20px;">Simpan Rekor</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL EDIT REKOR KEUANGAN -->
+  <div class="modal-bg" id="editKeuanganModal">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 style="font-size: 18px; font-weight: 800;">✏️ Edit Anggaran APBDes</h3>
+        <button onclick="closeModal('editKeuanganModal')" class="modal-close">&times;</button>
+      </div>
+      <form action="/dashboard/keuangan/edit" method="POST">
+        <input type="hidden" name="id" id="edit_keuangan_id">
+
+        <div class="form-group">
+          <label for="edit_tahun">TAHUN ANGGARAN</label>
+          <input type="number" name="tahun" id="edit_tahun" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_kategori">KATEGORI</label>
+          <select name="kategori" id="edit_kategori" class="form-control" required>
+            <option value="Pendapatan">Pendapatan Desa (Pendapatan)</option>
+            <option value="Belanja">Belanja Desa (Pengeluaran/Belanja)</option>
+            <option value="Pembiayaan">Pembiayaan Desa (SILPA/Lainnya)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_sub_kategori">SUB KATEGORI / SUMBER DANA / BIDANG</label>
+          <select name="sub_kategori" id="edit_sub_kategori" class="form-control" required>
+            <% if (typeof kategoriKeuangan !== 'undefined' && kategoriKeuangan.length > 0) { %>
+              <% kategoriKeuangan.forEach(function(kat) { %>
+                <option value="<%= kat.nama %>" data-tipe="<%= kat.tipe %>"><%= kat.nama %></option>
+              <% }); %>
+            <% } else { %>
+              <option value="Dana Desa (DD)" data-tipe="keuangan_pendapatan">Dana Desa (DD)</option>
+              <option value="Alokasi Dana Desa (ADD)" data-tipe="keuangan_pendapatan">Alokasi Dana Desa (ADD)</option>
+              <option value="Penyelenggaraan Pemerintahan" data-tipe="keuangan_belanja">Penyelenggaraan Pemerintahan</option>
+              <option value="Pembangunan Infrastruktur" data-tipe="keuangan_belanja">Pembangunan Infrastruktur</option>
+              <option value="SILPA Tahun Sebelumnya" data-tipe="keuangan_pembiayaan">SILPA Tahun Sebelumnya</option>
+            <% } %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_anggaran">JUMLAH ANGGARAN (Rp)</label>
+          <input type="number" name="anggaran" id="edit_anggaran" min="0" step="any" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_realisasi">REALISASI PENYERAPAN (Rp)</label>
+          <input type="number" name="realisasi" id="edit_realisasi" min="0" step="any" class="form-control" required>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+          <button type="button" onclick="closeModal('editKeuanganModal')" class="btn-sm btn-sm-secondary" style="padding: 10px 20px;">Batal</button>
+          <button type="submit" class="btn-sm btn-sm-primary" style="padding: 10px 20px;">💾 Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Fungsi penyaring sub-kategori keuangan berdasarkan kategori utama
+    function updateSubCategories(kategoriSelectId, subKategoriSelectId) {
+      const katSelect = document.getElementById(kategoriSelectId);
+      const subSelect = document.getElementById(subKategoriSelectId);
+      if (!katSelect || !subSelect) return;
+
+      const selectedTipe = 'keuangan_' + katSelect.value.toLowerCase();
+      const currentValue = subSelect.value;
+      
+      let firstVisibleOption = null;
+      let matchesCurrentValue = false;
+
+      Array.from(subSelect.options).forEach(opt => {
+        const optTipe = opt.getAttribute('data-tipe');
+        if (optTipe === selectedTipe) {
+          opt.style.display = '';
+          opt.disabled = false;
+          if (!firstVisibleOption) firstVisibleOption = opt;
+          if (opt.value === currentValue) matchesCurrentValue = true;
+        } else {
+          opt.style.display = 'none';
+          opt.disabled = true;
+        }
+      });
+
+      // Sinkronkan pilihan aktif
+      if (matchesCurrentValue) {
+        subSelect.value = currentValue;
+      } else if (firstVisibleOption) {
+        subSelect.value = firstVisibleOption.value;
+      }
+    }
+
+    // Daftarkan event listener setelah DOM dimuat
+    document.addEventListener('DOMContentLoaded', () => {
+      const addKat = document.getElementById('add_kategori');
+      if (addKat) {
+        addKat.addEventListener('change', () => updateSubCategories('add_kategori', 'add_sub_kategori'));
+        // Inisialisasi awal
+        updateSubCategories('add_kategori', 'add_sub_kategori');
+      }
+
+      const editKat = document.getElementById('edit_kategori');
+      if (editKat) {
+        editKat.addEventListener('change', () => updateSubCategories('edit_kategori', 'edit_sub_kategori'));
+      }
+    });
+
+    function triggerEditFinanceModal(id) {
+      const container = document.getElementById('finance-data-' + id);
+      const tahun = container.getAttribute('data-tahun');
+      const kategori = container.getAttribute('data-kategori');
+      const sub = container.getAttribute('data-sub');
+      const anggaran = container.getAttribute('data-anggaran');
+      const realisasi = container.getAttribute('data-realisasi');
+
+      document.getElementById('edit_keuangan_id').value = id;
+      document.getElementById('edit_tahun').value = tahun;
+      document.getElementById('edit_kategori').value = kategori;
+
+      // Update sub-kategori list based on selected main category
+      updateSubCategories('edit_kategori', 'edit_sub_kategori');
+
+      document.getElementById('edit_sub_kategori').value = sub;
+      document.getElementById('edit_anggaran').value = anggaran;
+      document.getElementById('edit_realisasi').value = realisasi;
+
+      openModal('editKeuanganModal');
+    }
+  </script>
+
+<%- include('../partials/dashboard-footer') %>

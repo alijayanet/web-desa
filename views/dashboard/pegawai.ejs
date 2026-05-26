@@ -1,0 +1,202 @@
+<%- include('../partials/dashboard-header') %>
+
+  <div class="card-panel" style="max-width: 900px; margin: 0 auto;">
+    <div class="panel-header" style="flex-wrap: wrap; gap: 16px;">
+      <h3>💼 Manajemen Akun Pegawai & Staff Desa</h3>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <!-- Live Search -->
+        <input type="text" id="searchPegawai" onkeyup="filterTable('searchPegawai', 'tablePegawai')" placeholder="🔍 Cari nama, username, role..." class="form-control" style="max-width: 250px; padding: 8px 12px; font-size: 13px; border-radius: var(--radius-sm);">
+        <button onclick="openModal('addPegawaiModal')" class="btn-sm btn-sm-primary" style="padding: 8px 16px;">
+          ➕ Tambah Pegawai Baru
+        </button>
+      </div>
+    </div>
+
+    <!-- ALERT ERROR & SUCCESS -->
+    <% if (error) { %>
+      <div class="alert alert-danger">
+        <span>⚠️</span>
+        <div>
+          <% if (error === 'username_exist') { %>
+            Username / NIK ini sudah terdaftar sebagai akun pengguna lain.
+          <% } else if (error === 'cannot_delete_self') { %>
+            Kesalahan: Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif digunakan.
+          <% } else if (error === 'notfound') { %>
+            Pengguna tidak ditemukan.
+          <% } else { %>
+            <%= error %>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+
+    <% if (success) { %>
+      <div class="alert alert-success">
+        <span>✓</span>
+        <div>
+          <% if (success === 'created') { %>
+            Akun pegawai baru berhasil dibuat secara aman.
+          <% } else if (success === 'updated') { %>
+            Akun pegawai berhasil diperbarui secara sukses.
+          <% } else if (success === 'deleted') { %>
+            Akun pegawai berhasil dihapus permanen dari sistem.
+          <% } else { %>
+            <%= success %>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+
+    <div class="table-responsive">
+      <table class="table-custom" id="tablePegawai">
+        <thead>
+          <tr>
+            <th>Username</th>
+            <th>Nama Lengkap</th>
+            <th>Akses Role</th>
+            <th style="text-align: center;">Tindakan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (pegawai && pegawai.length > 0) { %>
+            <% pegawai.forEach(function(p) { %>
+              <tr>
+                <td style="font-weight: 700; color: var(--primary);"><%= p.username %></td>
+                <td style="font-weight: 700;"><%= p.nama %></td>
+                <td>
+                  <% if (p.role === 'kades') { %>
+                    <span class="badge badge-success" style="background: rgba(16, 185, 129, 0.08); color: var(--success); border-color: rgba(16, 185, 129, 0.2);">Kepala Desa</span>
+                  <% } else if (p.role === 'sekdes') { %>
+                    <span class="badge badge-process" style="background: rgba(13, 148, 136, 0.08); color: var(--secondary); border-color: rgba(13, 148, 136, 0.2);">Sekretaris Desa</span>
+                  <% } else { %>
+                    <span class="badge badge-pending">Staff Administrasi</span>
+                  <% } %>
+                </td>
+                <td style="text-align: center;">
+                  <div style="display: flex; gap: 8px; justify-content: center;">
+                    <button onclick='editPegawaiModal(<%- JSON.stringify(JSON.stringify(p)) %>)' class="btn-sm btn-sm-secondary" style="padding: 4px 10px; font-size: 11px;">
+                      📝 Edit
+                    </button>
+                    <% if (user.username !== p.username) { %>
+                      <a href="/dashboard/pegawai/hapus/<%= p.username %>" onclick="return confirm('Apakah Anda yakin ingin menghapus akun pegawai ini secara permanen?')" class="btn-sm btn-sm-danger" style="padding: 4px 10px; font-size: 11px;">
+                        🗑️ Hapus
+                      </a>
+                    <% } else { %>
+                      <span style="font-size: 11px; color: var(--text-light); font-style: italic; font-weight: 600;">(Sedang Login)</span>
+                    <% } %>
+                  </div>
+                </td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr>
+              <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 30px;">Belum ada akun pegawai terdaftar.</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MODAL ADD PEGAWAI -->
+  <div class="modal-bg" id="addPegawaiModal">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 style="font-size: 18px; font-weight: 800;">Tambah Akun Pegawai</h3>
+        <button onclick="closeModal('addPegawaiModal')" class="modal-close">&times;</button>
+      </div>
+      <form action="/dashboard/pegawai" method="POST">
+        <div class="form-group">
+          <label for="username">USERNAME LOGIN</label>
+          <input type="text" name="username" class="form-control" placeholder="Contoh: staff_pelayanan, kaur_kesra" required>
+        </div>
+
+        <div class="form-group">
+          <label for="nama">NAMA LENGKAP & GELAR</label>
+          <input type="text" name="nama" class="form-control" placeholder="Nama Lengkap Pegawai" required>
+        </div>
+
+        <div class="form-group">
+          <label for="role">HAK AKSES / JABATAN</label>
+          <select name="role" class="form-control" required>
+            <option value="staff">Staff Administrasi / Kesejahteraan</option>
+            <option value="sekdes">Sekretaris Desa (Sekdes)</option>
+            <option value="kades">Kepala Desa (Kades)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="password">PASSWORD LOGIN</label>
+          <input type="password" name="password" class="form-control" placeholder="Masukkan Password Baru" required>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+          <button type="button" onclick="closeModal('addPegawaiModal')" class="btn-sm btn-sm-secondary" style="padding: 10px 20px;">Batal</button>
+          <button type="submit" class="btn-sm btn-sm-primary" style="padding: 10px 20px;">Buat Akun Pegawai</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL EDIT PEGAWAI -->
+  <div class="modal-bg" id="editPegawaiModal">
+    <div class="modal-card" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3 style="font-size: 18px; font-weight: 800;">Edit Detail Akun Pegawai</h3>
+        <button onclick="closeModal('editPegawaiModal')" class="modal-close">&times;</button>
+      </div>
+      <form action="/dashboard/pegawai/edit" method="POST">
+        <input type="hidden" name="old_username" id="edit_old_username">
+
+        <div class="form-group">
+          <label for="edit_username">USERNAME LOGIN (Tidak Dapat Diubah)</label>
+          <input type="text" id="edit_username" class="form-control" style="background: #e2e8f0; color: var(--text-muted);" disabled>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_nama">NAMA LENGKAP & GELAR</label>
+          <input type="text" name="nama" id="edit_nama" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_role">HAK AKSES / JABATAN</label>
+          <select name="role" id="edit_role" class="form-control" required>
+            <option value="staff">Staff Administrasi / Kesejahteraan</option>
+            <option value="sekdes">Sekretaris Desa (Sekdes)</option>
+            <option value="kades">Kepala Desa (Kades)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_password">PASSWORD BARU (Kosongkan jika tidak ingin diubah)</label>
+          <input type="password" name="password" id="edit_password" class="form-control" placeholder="Tulis password baru jika diubah">
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+          <button type="button" onclick="closeModal('editPegawaiModal')" class="btn-sm btn-sm-secondary" style="padding: 10px 20px;">Batal</button>
+          <button type="submit" class="btn-sm btn-sm-primary" style="padding: 10px 20px;">Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Populating modal edits specifically for Pegawai
+    function editPegawaiModal(pDataString) {
+      try {
+        const p = JSON.parse(pDataString);
+        
+        document.getElementById('edit_old_username').value = p.username;
+        document.getElementById('edit_username').value = p.username;
+        document.getElementById('edit_nama').value = p.nama;
+        document.getElementById('edit_role').value = p.role;
+        document.getElementById('edit_password').value = ''; // Reset password field
+        
+        openModal('editPegawaiModal');
+      } catch (error) {
+        console.error('Gagal parsing data pegawai:', error);
+      }
+    }
+  </script>
+
+<%- include('../partials/dashboard-footer') %>

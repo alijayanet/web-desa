@@ -1,0 +1,204 @@
+<%- include('../partials/dashboard-header') %>
+
+  <div class="dashboard-row">
+    
+    <!-- Formulir Pengajuan Surat -->
+    <div class="card-panel">
+      <div class="panel-header">
+        <h3>Formulir Pengajuan Surat Online</h3>
+      </div>
+      
+      <form action="/dashboard/surat" method="POST" id="formRequestSurat">
+        <div class="form-group">
+          <label for="jenis_surat">PILIH JENIS SURAT LAYANAN</label>
+          <select name="jenis_surat" id="jenis_surat" class="form-control" onchange="toggleFormFields()" required>
+            <% if (templates && templates.length > 0) { %>
+              <% templates.forEach(function(t) { %>
+                <option value="<%= t.nama_surat %>"><%= t.nama_surat %></option>
+              <% }); %>
+            <% } else { %>
+              <option value="Surat Keterangan Domisili">Surat Keterangan Domisili</option>
+              <option value="Surat Keterangan Usaha (SKU)">Surat Keterangan Usaha (SKU)</option>
+              <option value="Surat Keterangan Tidak Mampu (SKTM)">Surat Keterangan Tidak Mampu (SKTM)</option>
+              <option value="Surat Keterangan Berkelakuan Baik (Pengantar SKCK)">Surat Keterangan Berkelakuan Baik (Pengantar SKCK)</option>
+              <option value="Surat Keterangan Kelahiran">Surat Keterangan Kelahiran</option>
+              <option value="Surat Keterangan Kematian">Surat Keterangan Kematian</option>
+              <option value="Surat Pengantar Nikah (N1-N4)">Surat Pengantar Nikah (N1-N4)</option>
+              <option value="Surat Keterangan Duda/Janda">Surat Keterangan Duda/Janda</option>
+              <option value="Surat Keterangan Penghasilan">Surat Keterangan Penghasilan</option>
+              <option value="Surat Keterangan Bersih Diri">Surat Keterangan Bersih Diri</option>
+              <option value="Surat Keterangan Perbedaan Nama">Surat Keterangan Perbedaan Nama</option>
+              <option value="Surat Keterangan Pengantar Kehilangan">Surat Keterangan Pengantar Kehilangan</option>
+            <% } %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="keperluan">KEPERLUAN / ALASAN PENGJUAN</label>
+          <input type="text" name="keperluan" class="form-control" placeholder="Contoh: Persyaratan Administrasi Bank, Melamar Pekerjaan" required>
+        </div>
+
+        <!-- INPUT TAMBAHAN SPESIFIK SKU (Akan di-toggle JS) -->
+        <div id="fields_sku" style="display: none; border-top: 1px dashed var(--border); padding-top: 16px; margin-top: 16px;">
+          <h4 style="font-size: 13px; font-weight: 800; color: var(--primary); margin-bottom: 12px; text-transform: uppercase;">Detail Informasi Usaha</h4>
+          <div class="form-group">
+            <label for="nama_usaha">NAMA USAHA</label>
+            <input type="text" name="nama_usaha" id="nama_usaha" class="form-control" placeholder="Contoh: Warung Bakso Makmur">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="jenis_usaha">BIDANG / JENIS USAHA</label>
+              <input type="text" name="jenis_usaha" id="jenis_usaha" class="form-control" placeholder="Contoh: Kuliner, Pertanian, Perdagangan">
+            </div>
+            <div class="form-group">
+              <label for="alamat_usaha">ALAMAT LOKASI USAHA</label>
+              <input type="text" name="alamat_usaha" id="alamat_usaha" class="form-control" placeholder="Contoh: Blok Desa RT 02 RW 01 Ujunggebang">
+            </div>
+          </div>
+        </div>
+
+        <!-- INPUT TAMBAHAN SPESIFIK KELAHIRAN -->
+        <div id="fields_kelahiran" style="display: none; border-top: 1px dashed var(--border); padding-top: 16px; margin-top: 16px;">
+          <h4 style="font-size: 13px; font-weight: 800; color: var(--primary); margin-bottom: 12px; text-transform: uppercase;">Detail Data Kelahiran Bayi</h4>
+          <div class="form-group">
+            <label for="nama_bayi">NAMA BAYI / ANAK</label>
+            <input type="text" name="nama_bayi" id="nama_bayi" class="form-control" placeholder="Nama Lengkap Bayi">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="nama_ibu">NAMA IBU KANDUNG</label>
+              <input type="text" name="nama_ibu" id="nama_ibu" class="form-control" placeholder="Nama Lengkap Ibu">
+            </div>
+            <div class="form-group">
+              <label for="hubungan">HUBUNGAN KELUARGA</label>
+              <input type="text" name="hubungan" value="Anak Kandung" class="form-control" placeholder="Hubungan dengan bayi">
+            </div>
+          </div>
+        </div>
+
+        <!-- INPUT TAMBAHAN SPESIFIK KEMATIAN -->
+        <div id="fields_kematian" style="display: none; border-top: 1px dashed var(--border); padding-top: 16px; margin-top: 16px;">
+          <h4 style="font-size: 13px; font-weight: 800; color: var(--primary); margin-bottom: 12px; text-transform: uppercase;">Detail Data Jenazah</h4>
+          <div class="form-group">
+            <label for="nama_jenazah">NAMA ALMARHUM / ALMARHUMAH</label>
+            <input type="text" name="nama_jenazah" id="nama_jenazah" class="form-control" placeholder="Nama Lengkap Jenazah">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="tanggal_kematian">TANGGAL WAFAT</label>
+              <input type="date" name="tanggal_kematian" id="tanggal_kematian" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="hubungan">HUBUNGAN KELUARGA</label>
+              <input type="text" name="hubungan" class="form-control" placeholder="Hubungan pelapor dengan jenazah">
+            </div>
+          </div>
+        </div>
+
+        <button type="submit" class="btn-sm btn-sm-primary" style="width: 100%; padding: 14px; font-size: 14px; border-radius: var(--radius-sm); margin-top: 20px;">
+          Kirim Permohonan Surat Online
+        </button>
+      </form>
+    </div>
+
+    <!-- Riwayat Pengajuan Surat -->
+    <div class="card-panel">
+      <div class="panel-header">
+        <h3>Riwayat Permohonan Surat Saya</h3>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 16px;">
+        <% if (riwayat && riwayat.length > 0) { %>
+          <% riwayat.forEach(function(s) { %>
+            <div style="background: #f8fafc; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 20px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 12px; align-items: center;">
+                <span style="font-weight: 800; color: var(--primary); font-size: 13px;"><%= s.id %></span>
+                
+                <% if (s.status === 'Disetujui') { %>
+                  <span class="badge badge-success">Selesai / Disetujui</span>
+                <% } else if (s.status === 'Ditolak') { %>
+                  <span class="badge badge-danger">Ditolak</span>
+                <% } else { %>
+                  <span class="badge badge-pending">Sedang Diproses</span>
+                <% } %>
+              </div>
+
+              <h4 style="font-size: 15px; font-weight: 800; margin-bottom: 6px;"><%= s.jenis_surat %></h4>
+              <p style="font-size: 12px; color: var(--text-muted); line-height: 1.4; margin-bottom: 12px;">
+                <strong>Keperluan:</strong> <%= s.keterangan ? s.keterangan.keperluan : '-' %>
+              </p>
+              
+              <% if (s.catatan) { %>
+                <div style="background: rgba(245, 158, 11, 0.04); border: 1px solid rgba(245, 158, 11, 0.1); border-radius: 4px; padding: 10px; font-size: 11px; margin-bottom: 12px;">
+                  💬 <strong>Catatan Admin:</strong> <%= s.catatan %>
+                </div>
+              <% } %>
+
+              <div style="display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(15, 23, 42, 0.04); padding-top: 12px; font-size: 12px; color: var(--text-light);">
+                <span>📅 Diajukan: <%= s.tanggal_pengajuan %></span>
+                
+                <% if (s.status === 'Disetujui') { %>
+                  <a href="/dashboard/surat/cetak/<%= s.id %>" target="_blank" class="btn-sm btn-sm-primary" style="padding: 6px 12px; font-size: 11px;">
+                    🖨️ Cetak Surat Resmi
+                  </a>
+                <% } %>
+              </div>
+            </div>
+          <% }); %>
+        <% } else { %>
+          <div style="text-align: center; color: var(--text-muted); padding: 40px 0;">
+            <div style="font-size: 40px; margin-bottom: 12px;">✉️</div>
+            <h4>Belum ada surat</h4>
+            <p>Anda belum pernah mengajukan surat online sebelumnya.</p>
+          </div>
+        <% } %>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Toggle fields based on selected letter type
+    function toggleFormFields() {
+      const type = document.getElementById('jenis_surat').value;
+      
+      const sku = document.getElementById('fields_sku');
+      const lahir = document.getElementById('fields_kelahiran');
+      const mati = document.getElementById('fields_kematian');
+      
+      sku.style.display = 'none';
+      lahir.style.display = 'none';
+      mati.style.display = 'none';
+      
+      // Undisable/disable inputs so form sends correct data
+      document.getElementById('nama_usaha').required = false;
+      document.getElementById('nama_bayi').required = false;
+      document.getElementById('nama_ibu').required = false;
+      document.getElementById('nama_jenazah').required = false;
+      
+      if (type === 'Surat Keterangan Usaha (SKU)') {
+        sku.style.display = 'block';
+        document.getElementById('nama_usaha').required = true;
+      } else if (type === 'Surat Keterangan Domisili Usaha') {
+        sku.style.display = 'block';
+        document.getElementById('nama_usaha').required = true;
+      } else if (type === 'Surat Keterangan Kelahiran') {
+        lahir.style.display = 'block';
+        document.getElementById('nama_bayi').required = true;
+        document.getElementById('nama_ibu').required = true;
+      } else if (type === 'Surat Keterangan Perbedaan Nama') {
+        lahir.style.display = 'block';
+        document.getElementById('nama_bayi').required = true;
+        document.getElementById('nama_ibu').required = true;
+      } else if (type === 'Surat Keterangan Kematian') {
+        mati.style.display = 'block';
+        document.getElementById('nama_jenazah').required = true;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      toggleFormFields();
+    });
+  </script>
+
+<%- include('../partials/dashboard-footer') %>

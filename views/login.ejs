@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login Portal - <%= settings.nama_desa || 'Desa Ujunggebang' %></title>
+  <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body>
+
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-header">
+        <a href="/" class="auth-logo">U</a>
+        <h2>Portal Desa Digital</h2>
+        <p><%= settings.nama_desa || 'Desa Ujunggebang' %></p>
+      </div>
+
+      <% if (error) { %>
+        <div class="alert alert-danger">
+          <span>⚠️</span>
+          <div><%= error %></div>
+        </div>
+      <% } %>
+
+      <% if (success) { %>
+        <div class="alert alert-success">
+          <span>✓</span>
+          <div><%= success %></div>
+        </div>
+      <% } %>
+
+      <form action="/login" method="POST">
+        <div class="form-group">
+          <label for="username">NIK / USERNAME</label>
+          <input type="text" id="username" name="username" class="form-control" placeholder="Masukkan NIK atau Username" required>
+        </div>
+
+        <div class="form-group">
+          <label for="password">PASSWORD</label>
+          <input type="password" id="password" name="password" class="form-control" placeholder="Masukkan Password" required>
+        </div>
+
+        <button type="submit" class="btn-sm btn-sm-primary" style="width: 100%; padding: 14px; font-size: 15px; border-radius: var(--radius-sm); margin-top: 10px;">
+          Masuk ke Dashboard
+        </button>
+      </form>
+
+      <div class="auth-footer">
+        <p>Anda seorang warga dan belum memiliki akun?</p>
+        <p><a href="/register">Registrasi Akun Warga Mandiri &rarr;</a></p>
+        <p style="margin-top: 16px; font-size: 11px;"><a href="/" style="color: var(--text-light); font-weight: 500;">&larr; Kembali ke Website Desa</a></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/main.js"></script>
+</body>
+</html>

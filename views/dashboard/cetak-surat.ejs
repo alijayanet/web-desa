@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cetak Surat Resmi - <%= surat.id %></title>
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <style>
+    /* Custom Print CSS overrides to center and align standard letter */
+    body {
+      background: #f1f5f9;
+      padding: 40px 20px;
+    }
+    @media print {
+      body {
+        background: #ffffff !important;
+        padding: 0 !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      .print-letter-box {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 !important;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Print Control Bar (Hidden on print) -->
+  <div class="no-print" style="max-width: 800px; margin: 0 auto 20px auto; background: var(--white); border-radius: var(--radius-sm); padding: 16px; border: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.02);">
+    <div>
+      <h4 style="font-size: 14px; font-weight: 800;">🖨️ Dokumen Resmi Desa Digital</h4>
+      <p style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Gunakan tombol di kanan untuk mencetak langsung atau simpan sebagai PDF.</p>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <a href="/dashboard/surat" class="btn-sm btn-sm-secondary" style="padding: 10px 18px; font-size: 12px;">&larr; Kembali</a>
+      <button onclick="printDocument()" class="btn-sm btn-sm-primary" style="padding: 10px 18px; font-size: 12px;">🖨️ Cetak Dokumen</button>
+    </div>
+  </div>
+
+  <!-- A4 Printable Document Container -->
+  <div class="print-letter-box">
+    
+    <!-- KOP SURAT RESMI -->
+    <div class="kop-surat">
+      <div class="kop-logo" style="display: flex; align-items: center; justify-content: center; width: 80px; height: 80px; margin-right: 20px; flex-shrink: 0;">
+        <% if (settings.logo) { %>
+          <img src="<%= settings.logo %>" alt="Logo Desa" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+        <% } else { %>
+          <span style="font-size: 40px; line-height: 1;">🇮🇩</span>
+        <% } %>
+      </div>
+      <div class="kop-details">
+        <h2>Pemerintah Kabupaten <%= settings.kabupaten || 'Indramayu' %></h2>
+        <h2>Kecamatan <%= settings.kecamatan || 'Sukra' %></h2>
+        <h1>Kantor <%= settings.sebutan_kades || 'Kepala Desa' %> <%= settings.nama_desa || 'Ujunggebang' %></h1>
+        <p><%= settings.alamat_kantor || 'Jl. Raya Pantura No. 12, Desa Ujunggebang' %> | Email: <%= settings.email %></p>
+      </div>
+    </div>
+
+    <!-- NOMOR SURAT -->
+    <div class="surat-title-box">
+      <h3><%= surat.jenis_surat %></h3>
+      <p>Nomor: <%- nomorSurat %></p>
+    </div>
+
+    <!-- CONTENT BODY -->
+    <div class="surat-body">
+      <p>Yang bertanda tangan di bawah ini, <%= settings.sebutan_kades || 'Kepala Desa' %> <%= settings.nama_desa || 'Ujunggebang' %>, Kecamatan <%= settings.kecamatan || 'Sukra' %>, Kabupaten <%= settings.kabupaten || 'Indramayu' %>, menerangkan dengan sebenarnya bahwa penduduk di bawah ini:</p>
+      
+      <!-- DATA DIRI -->
+      <table class="surat-table-penduduk">
+        <tr>
+          <td>Nama Lengkap</td>
+          <td>:</td>
+          <td style="text-transform: uppercase; font-weight: 700;"><%= pemohon.nama %></td>
+        </tr>
+        <tr>
+          <td>Nomor NIK KTP</td>
+          <td>:</td>
+          <td><%= pemohon.nik %></td>
+        </tr>
+        <tr>
+          <td>Nomor Kartu Keluarga</td>
+          <td>:</td>
+          <td><%= pemohon.no_kk %></td>
+        </tr>
+        <tr>
+          <td>Tempat / Tgl Lahir</td>
+          <td>:</td>
+          <td><%= pemohon.tempat_lahir %>, <%= new Date(pemohon.tanggal_lahir).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) %></td>
+        </tr>
+        <tr>
+          <td>Jenis Kelamin</td>
+          <td>:</td>
+          <td><%= pemohon.gender %></td>
+        </tr>
+        <tr>
+          <td>Agama / Pekerjaan</td>
+          <td>:</td>
+          <td><%= pemohon.agama %> / <%= pemohon.pekerjaan %></td>
+        </tr>
+        <tr>
+          <td>Alamat Lengkap</td>
+          <td>:</td>
+          <td><%= pemohon.alamat %>, Blok/Dusun <%= pemohon.dusun %> Desa Ujunggebang</td>
+        </tr>
+      </table>
+
+      <!-- PERNYATAAN SPESIFIK DINAMIS (DARI DATABASE TEMPLATE) -->
+      <p style="text-indent: 30px; margin-top: 20px; text-align: justify;"><%- isiHtml %></p>
+
+      <p style="margin-top: 24px;">Demikian surat keterangan ini kami buat dengan sebenarnya, agar dapat dipergunakan sebagaimana mestinya dan pihak yang berkepentingan maklum adanya.</p>
+    </div>
+
+    <!-- SIGNATURE AREA -->
+    <div class="surat-signature-area">
+      <div class="surat-signature-box">
+        <div class="surat-signature-date">
+          <%= settings.nama_desa ? settings.nama_desa.replace('Desa ', '') : 'Ujunggebang' %>, <%= new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) %><br>
+          <strong><%= (settings.sebutan_kades || 'Kepala Desa').toUpperCase() %> <%= (settings.nama_desa || 'Ujunggebang').toUpperCase() %></strong>
+        </div>
+        
+        <!-- E-STAMP DIGITAL SIGNATURE REPRESENTATION -->
+        <div class="digital-stamp">
+          🛡️ DESA DIGITAL VERIFIED<br>
+          <span style="font-size: 8px; font-weight: 500; font-family: monospace;">UUID: <%= surat.id %>-KADES-TTD</span>
+        </div>
+        
+        <div class="surat-signature-name" style="margin-top: 16px;">
+          <%= settings.kades || 'H. Sukarno, M.Si' %>
+        </div>
+        <div class="surat-signature-nip">NIP. 19720512 200312 1 002</div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="/js/dashboard.js"></script>
+</body>
+</html>

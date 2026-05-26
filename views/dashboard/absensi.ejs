@@ -1,0 +1,394 @@
+<%- include('../partials/dashboard-header') %>
+
+<div class="card-panel" style="max-width: 1100px; margin: 0 auto;">
+  <div class="panel-header" style="flex-wrap: wrap; gap: 16px;">
+    <div>
+      <h3><%= (viewMode === 'monitor') ? '📊 Laporan Absensi Perangkat Desa' : '📷 Absensi Perangkat Desa (Scan Wajah)' %></h3>
+      <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">
+        <%= (viewMode === 'monitor') ? 'Tampilan laporan hanya menampilkan data absensi (tanpa foto).' : 'Ambil foto wajah melalui kamera atau unggah foto, lalu pilih jenis absen masuk/pulang.' %>
+      </div>
+    </div>
+    <form action="/dashboard/absensi" method="GET" style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+      <% if (viewMode === 'monitor') { %>
+        <input type="hidden" name="view" value="monitor">
+      <% } %>
+      <input type="date" name="tanggal" value="<%= tanggal %>" class="form-control" style="padding: 8px 12px; font-size: 13px; border-radius: var(--radius-sm);">
+      <button type="submit" class="btn-sm btn-sm-secondary" style="padding: 8px 14px;">🔎 Lihat</button>
+    </form>
+  </div>
+
+  <% if (error) { %>
+    <div class="alert alert-danger">
+      <span>⚠️</span>
+      <div>
+        <% if (error === 'jenis_invalid') { %>
+          Jenis absensi tidak valid. Pilih "Masuk" atau "Pulang".
+        <% } else if (error === 'foto_wajib') { %>
+          Foto wajah wajib diunggah.
+        <% } else if (error === 'already_masuk') { %>
+          Anda sudah melakukan absensi masuk hari ini.
+        <% } else if (error === 'already_pulang') { %>
+          Anda sudah melakukan absensi pulang hari ini.
+        <% } else if (error === 'lokasi_kantor_belum_diatur') { %>
+          Lokasi kantor belum diatur. Silakan atur koordinat kantor di menu Pengaturan Profil Desa.
+        <% } else if (error === 'lokasi_wajib') { %>
+          Lokasi GPS wajib. Aktifkan lokasi lalu klik "Ambil Lokasi".
+        <% } else if (error === 'lokasi_diluar_area') { %>
+          Lokasi Anda terdeteksi di luar area kantor desa.
+        <% } else { %>
+          <%= error %>
+        <% } %>
+      </div>
+    </div>
+  <% } %>
+
+  <% if (success) { %>
+    <div class="alert alert-success">
+      <span>✓</span>
+      <div>Absensi berhasil disimpan.</div>
+    </div>
+  <% } %>
+
+  <div style="display: grid; grid-template-columns: 1fr; gap: 20px; margin-top: 18px;">
+    <% if (viewMode !== 'monitor') { %>
+    <div class="card-panel" style="padding: 18px; border: 1px solid var(--border); background: var(--white);">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div style="font-weight: 800;">Status Anda</div>
+        <div style="font-size: 12px; color: var(--text-muted);">
+          <% if (lastToday && lastToday.waktu) { %>
+            Terakhir: <%= (lastToday.jenis || '').toUpperCase() %> • <%= new Date(lastToday.waktu).toLocaleString('id-ID') %>
+          <% } else { %>
+            Belum ada absensi pada tanggal ini.
+          <% } %>
+        </div>
+      </div>
+
+      <form action="/dashboard/absensi" method="POST" enctype="multipart/form-data" id="absenForm" style="margin-top: 14px;">
+        <div style="display: grid; grid-template-columns: 1fr; gap: 16px;">
+          <div style="display: grid; grid-template-columns: 1fr; gap: 14px;">
+            <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
+              <div style="display: grid; grid-template-columns: 1fr; gap: 10px;">
+                <video id="absenVideo" playsinline autoplay muted style="width: 100%; max-width: 520px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: #0b1220;"></video>
+                <canvas id="absenCanvas" style="display: none;"></canvas>
+                <img id="absenPreview" alt="Preview Foto Wajah" style="display: none; width: 100%; max-width: 520px; border-radius: var(--radius-sm); border: 1px solid var(--border);" />
+              </div>
+              <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                <button type="button" class="btn-sm btn-sm-secondary" id="btnStartCam" style="padding: 8px 14px;">🎥 Aktifkan Kamera</button>
+                <button type="button" class="btn-sm btn-sm-primary" id="btnCapture" style="padding: 8px 14px;" disabled>📸 Ambil Foto</button>
+                <button type="button" class="btn-sm btn-sm-secondary" id="btnRetake" style="padding: 8px 14px; display: none;">🔁 Ulangi</button>
+                <button type="button" class="btn-sm btn-sm-secondary" id="btnPickFile" style="padding: 8px 14px;">🖼️ Pilih Foto</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr; gap: 12px; max-width: 520px;">
+            <div style="display: grid; grid-template-columns: 1fr; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: rgba(15, 23, 42, 0.02);">
+              <div style="display:flex; justify-content: space-between; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <div style="font-weight: 800;">📍 Geo Tagging</div>
+                <button type="button" class="btn-sm btn-sm-secondary" id="btnGetLocation" style="padding: 6px 12px;">Ambil Lokasi</button>
+              </div>
+              <div id="locStatus" style="font-size: 12px; color: var(--text-muted);">Status: belum diambil</div>
+              <input type="hidden" name="lokasi_lat" id="lokasi_lat">
+              <input type="hidden" name="lokasi_lng" id="lokasi_lng">
+              <input type="hidden" name="lokasi_acc" id="lokasi_acc">
+            </div>
+
+            <div class="form-group" style="margin: 0;">
+              <label for="jenis">JENIS ABSENSI</label>
+              <select name="jenis" id="jenis" class="form-control" required>
+                <option value="masuk">Masuk</option>
+                <option value="pulang">Pulang</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin: 0;">
+              <label for="catatan">CATATAN (OPSIONAL)</label>
+              <input type="text" name="catatan" id="catatan" class="form-control" placeholder="Contoh: Dinas luar, rapat kecamatan, dll." maxlength="200">
+            </div>
+            <input type="file" name="absen_foto" id="absen_foto" accept="image/*" style="display:none" required>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <button type="submit" class="btn-sm btn-sm-primary" id="btnSubmitAbsen" style="padding: 10px 16px;">✅ Simpan Absensi</button>
+            </div>
+            <div id="absenHint" style="font-size: 12px; color: var(--text-muted);">
+              Pastikan wajah terlihat jelas, pencahayaan cukup, dan tidak blur.
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <div class="card-panel" style="padding: 18px; border: 1px solid var(--border); background: var(--white);">
+      <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+        <div style="font-weight: 800;">Riwayat Saya</div>
+        <div style="font-size: 12px; color: var(--text-muted);">Maksimal 30 data terbaru</div>
+      </div>
+      <div class="table-responsive" style="margin-top: 12px;">
+        <table class="table-custom">
+          <thead>
+            <tr>
+              <th>Waktu</th>
+              <th>Jenis</th>
+              <th>Foto</th>
+              <th>Catatan</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (myRecords && myRecords.length > 0) { %>
+              <% myRecords.forEach(function(r) { %>
+                <tr>
+                  <td style="font-weight: 700;"><%= r.waktu ? new Date(r.waktu).toLocaleString('id-ID') : '-' %></td>
+                  <td>
+                    <% if (r.jenis === 'masuk') { %>
+                      <span class="badge badge-success" style="font-size: 11px;">Masuk</span>
+                    <% } else { %>
+                      <span class="badge badge-pending" style="font-size: 11px;">Pulang</span>
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if (r.foto) { %>
+                      <a href="<%= r.foto %>" target="_blank">
+                        <img src="<%= r.foto %>" alt="Foto" style="width: 48px; height: 48px; object-fit: cover; border-radius: 10px; border: 1px solid var(--border);">
+                      </a>
+                    <% } else { %>
+                      -
+                    <% } %>
+                  </td>
+                  <td style="color: var(--text-muted);"><%= r.catatan || '-' %></td>
+                </tr>
+              <% }); %>
+            <% } else { %>
+              <tr>
+                <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 24px;">Belum ada riwayat absensi.</td>
+              </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <% } %>
+
+    <% if (canMonitor) { %>
+      <div class="card-panel" style="padding: 18px; border: 1px solid var(--border); background: var(--white);">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px;">
+          <div style="font-weight: 800;">Log Absensi Semua Aparat (Tanggal <%= tanggal %>)</div>
+          <div style="font-size: 12px; color: var(--text-muted);">Maksimal 200 data</div>
+        </div>
+        <div class="table-responsive" style="margin-top: 12px;">
+          <table class="table-custom">
+            <thead>
+              <tr>
+                <th>Waktu</th>
+                <th>Nama</th>
+                <th>Role</th>
+                <th>Jenis</th>
+                <th>Foto</th>
+                <th style="text-align: right;">Jarak (m)</th>
+                <th style="text-align: right;">Akurasi (m)</th>
+                <th>Catatan</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% if (todayRecords && todayRecords.length > 0) { %>
+                <% todayRecords.forEach(function(r) { %>
+                  <tr>
+                    <td style="font-weight: 700;"><%= r.waktu ? new Date(r.waktu).toLocaleString('id-ID') : '-' %></td>
+                    <td style="font-weight: 800;"><%= r.nama %></td>
+                    <td style="text-transform: uppercase; font-size: 12px; font-weight: 700; color: var(--text-muted);"><%= r.role %></td>
+                    <td>
+                      <% if (r.jenis === 'masuk') { %>
+                        <span class="badge badge-success" style="font-size: 11px;">Masuk</span>
+                      <% } else { %>
+                        <span class="badge badge-pending" style="font-size: 11px;">Pulang</span>
+                      <% } %>
+                    </td>
+                    <td>
+                      <% if (r.foto) { %>
+                        <a href="<%= r.foto %>" target="_blank">
+                          <img src="<%= r.foto %>" alt="Foto" style="width: 48px; height: 48px; object-fit: cover; border-radius: 10px; border: 1px solid var(--border);">
+                        </a>
+                      <% } else { %>
+                        -
+                      <% } %>
+                    </td>
+                    <td style="text-align: right; font-weight: 800;"><%= (r.jarak_kantor_m !== null && r.jarak_kantor_m !== undefined) ? r.jarak_kantor_m : '-' %></td>
+                    <td style="text-align: right; font-weight: 800;"><%= (r.lokasi_acc !== null && r.lokasi_acc !== undefined) ? Math.round(r.lokasi_acc) : '-' %></td>
+                    <td style="color: var(--text-muted);"><%= r.catatan || '-' %></td>
+                  </tr>
+                <% }); %>
+              <% } else { %>
+                <tr>
+                  <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 24px;">Belum ada absensi pada tanggal ini.</td>
+                </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    <% } %>
+  </div>
+</div>
+
+<script>
+  (function () {
+    const viewMode = '<%= viewMode || "self" %>';
+    if (viewMode === 'monitor') return;
+    const video = document.getElementById('absenVideo');
+    const canvas = document.getElementById('absenCanvas');
+    const preview = document.getElementById('absenPreview');
+    const btnStart = document.getElementById('btnStartCam');
+    const btnCapture = document.getElementById('btnCapture');
+    const btnRetake = document.getElementById('btnRetake');
+    const btnPickFile = document.getElementById('btnPickFile');
+    const fileInput = document.getElementById('absen_foto');
+    const btnGetLocation = document.getElementById('btnGetLocation');
+    const latInput = document.getElementById('lokasi_lat');
+    const lngInput = document.getElementById('lokasi_lng');
+    const accInput = document.getElementById('lokasi_acc');
+    const locStatus = document.getElementById('locStatus');
+    const btnSubmit = document.getElementById('btnSubmitAbsen');
+
+    let stream = null;
+
+    const setSubmitEnabled = (enabled) => {
+      if (!btnSubmit) return;
+      btnSubmit.disabled = !enabled;
+      btnSubmit.style.opacity = enabled ? '1' : '0.6';
+      btnSubmit.style.pointerEvents = enabled ? 'auto' : 'none';
+    };
+
+    const stopStream = () => {
+      if (!stream) return;
+      try {
+        stream.getTracks().forEach((t) => t.stop());
+      } catch (e) {}
+      stream = null;
+    };
+
+    const setLocStatus = (text) => {
+      if (locStatus) locStatus.textContent = text;
+    };
+
+    const setLocation = (pos) => {
+      const lat = pos && pos.coords ? pos.coords.latitude : null;
+      const lng = pos && pos.coords ? pos.coords.longitude : null;
+      const acc = pos && pos.coords ? pos.coords.accuracy : null;
+      if (typeof lat === 'number' && typeof lng === 'number') {
+        if (latInput) latInput.value = String(lat);
+        if (lngInput) lngInput.value = String(lng);
+        if (accInput && typeof acc === 'number') accInput.value = String(acc);
+        setLocStatus('Status: siap' + (typeof acc === 'number' ? ' (±' + Math.round(acc) + 'm)' : ''));
+        setSubmitEnabled(true);
+        return true;
+      }
+      return false;
+    };
+
+    const getLocation = () => {
+      if (!navigator.geolocation) {
+        setLocStatus('Status: GPS tidak didukung');
+        setSubmitEnabled(false);
+        return;
+      }
+      setLocStatus('Status: mengambil lokasi...');
+      setSubmitEnabled(false);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          if (!setLocation(pos)) {
+            setLocStatus('Status: gagal mengambil koordinat');
+            setSubmitEnabled(false);
+          }
+        },
+        (err) => {
+          setLocStatus('Status: gagal (' + (err && err.message ? err.message : 'permission denied') + ')');
+          setSubmitEnabled(false);
+        },
+        { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      );
+    };
+
+    setSubmitEnabled(false);
+    getLocation();
+    if (btnGetLocation) btnGetLocation.addEventListener('click', getLocation);
+
+    const setPreviewBlob = (blob) => {
+      const url = URL.createObjectURL(blob);
+      preview.src = url;
+      preview.style.display = 'block';
+      const dt = new DataTransfer();
+      const file = new File([blob], 'absen-wajah-' + Date.now() + '.jpg', { type: 'image/jpeg' });
+      dt.items.add(file);
+      fileInput.files = dt.files;
+    };
+
+    const clearPreview = (preserveInput) => {
+      if (preview.src) {
+        try { URL.revokeObjectURL(preview.src); } catch (e) {}
+      }
+      preview.src = '';
+      preview.style.display = 'none';
+      if (!preserveInput) fileInput.value = '';
+    };
+
+    btnStart.addEventListener('click', async () => {
+      clearPreview(false);
+      stopStream();
+      try {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'user', width: { ideal: 640 } },
+          audio: false
+        });
+        video.srcObject = stream;
+        await video.play();
+        btnCapture.disabled = false;
+      } catch (e) {
+        btnCapture.disabled = true;
+        alert('Tidak bisa mengakses kamera. Silakan gunakan tombol "Pilih Foto".');
+      }
+    });
+
+    btnCapture.addEventListener('click', async () => {
+      if (!video.videoWidth || !video.videoHeight) return;
+      const targetW = 640;
+      const ratio = video.videoHeight / video.videoWidth;
+      const w = Math.min(targetW, video.videoWidth);
+      const h = Math.round(w * ratio);
+
+      canvas.width = w;
+      canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, w, h);
+
+      canvas.toBlob((blob) => {
+        if (!blob) return;
+        setPreviewBlob(blob);
+        btnRetake.style.display = 'inline-flex';
+      }, 'image/jpeg', 0.86);
+    });
+
+    btnRetake.addEventListener('click', () => {
+      clearPreview(false);
+    });
+
+    btnPickFile.addEventListener('click', () => {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener('change', () => {
+      if (!fileInput.files || !fileInput.files[0]) return;
+      const f = fileInput.files[0];
+      if (!f.type || !f.type.startsWith('image/')) {
+        clearPreview(false);
+        return;
+      }
+      clearPreview(true);
+      preview.src = URL.createObjectURL(f);
+      preview.style.display = 'block';
+      btnRetake.style.display = 'inline-flex';
+    });
+
+    window.addEventListener('beforeunload', () => {
+      stopStream();
+    });
+  })();
+</script>
+
+<%- include('../partials/dashboard-footer') %>

@@ -1,0 +1,361 @@
+<%- include('../partials/dashboard-header') %>
+
+  <div class="card-panel">
+    <div class="panel-header" style="flex-wrap: wrap; gap: 16px;">
+      <h3>Sistem Verifikasi & TTD E-Surat Desa</h3>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+        <!-- Live Search -->
+        <input type="text" id="searchSurat" onkeyup="filterTable('searchSurat', 'tableSurat')" placeholder="🔍 Cari kode, nama pemohon, atau tipe surat..." class="form-control" style="max-width: 230px; padding: 8px 12px; font-size: 13px; border-radius: var(--radius-sm);">
+        <% if (user.role === 'staff' || user.role === 'sekdes') { %>
+          <button onclick="openModal('addManualSuratModal')" class="btn-sm btn-sm-primary" style="padding: 8px 16px;">
+            ➕ Buat Surat Manual (Offline)
+          </button>
+        <% } %>
+      </div>
+    </div>
+
+    <% if (success) { %>
+      <div class="alert alert-success">
+        <span>✓</span>
+        <div>
+          <% if (success === 'manual_created') { %>
+            Surat offline/manual berhasil dibuat dan masuk langsung ke antrean verifikasi Sekdes.
+          <% } else if (success === 'status_updated') { %>
+            Status verifikasi surat berhasil diperbarui secara sukses.
+          <% } else if (success === 'content_updated') { %>
+            Naskah fisik surat dan nomor surat resmi berhasil diperbarui di database!
+          <% } else { %>
+            <%= success %>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+
+    <% if (error) { %>
+      <div class="alert alert-danger">
+        <span>⚠️</span>
+        <div>
+          <% if (error === 'missing_fields') { %>
+            Mohon lengkapi semua kolom formulir pengajuan surat.
+          <% } else if (error === 'nik_not_found') { %>
+            NIK pemohon tidak terdaftar sebagai penduduk Desa Ujunggebang.
+          <% } else if (error === 'notfound') { %>
+            Berkas permohonan surat tidak ditemukan.
+          <% } else { %>
+            <%= error %>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+
+    <div class="table-responsive">
+      <table class="table-custom" id="tableSurat">
+        <thead>
+          <tr>
+            <th>Kode</th>
+            <th>Pemohon</th>
+            <th>NIK</th>
+            <th>Jenis Layanan Surat</th>
+            <th>Tanggal</th>
+            <th>Status Alur</th>
+            <th style="text-align: center;">Tindakan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (daftarSurat && daftarSurat.length > 0) { %>
+            <% daftarSurat.forEach(function(s) { %>
+              <tr>
+                <td style="font-weight: 700; color: var(--primary);"><%= s.id %></td>
+                <td style="font-weight: 700;"><%= s.nama %></td>
+                <td><%= s.nik %></td>
+                <td style="font-weight: 600;"><%= s.jenis_surat %></td>
+                <td><%= s.tanggal_pengajuan %></td>
+                <td>
+                  <% if (s.status === 'Disetujui') { %>
+                    <span class="badge badge-success">✓ Disetujui <%= settings.sebutan_kades || 'Kepala Desa' %></span>
+                  <% } else if (s.status === 'Ditolak') { %>
+                    <span class="badge badge-danger">✖ Ditolak</span>
+                  <% } else if (s.status === 'Menunggu Verifikasi Staff') { %>
+                    <span class="badge badge-pending">⏳ Antrean Staff</span>
+                  <% } else if (s.status === 'Diverifikasi Sekdes') { %>
+                    <span class="badge badge-process" style="background: rgba(59, 130, 246, 0.08); color: var(--info);">⏳ Antrean Sekdes</span>
+                  <% } else if (s.status === 'Disetujui Sekdes, Menunggu TTD Kades') { %>
+                    <span class="badge badge-process" style="background: rgba(13, 148, 136, 0.08); color: var(--secondary);">✍️ Antrean TTD <%= settings.sebutan_kades || 'Kepala Desa' %></span>
+                  <% } else { %>
+                    <span class="badge badge-pending"><%= s.status %></span>
+                  <% } %>
+                </td>
+                <td style="text-align: center;">
+                  <!-- Container data surat tersembunyi untuk diedit -->
+                  <div id="letter-data-<%= s.id %>" data-nomor="<%= s.nomor_surat || '' %>" data-isi="<%= s.isi_surat || '' %>" style="display: none;"></div>
+
+                  <div style="display: flex; gap: 8px; justify-content: center; align-items: center; flex-wrap: wrap;">
+                    <!-- Action modal populates dynamically -->
+                    <button onclick="openApprovalModal('<%= s.id %>', '<%= s.status %>', '<%= s.catatan %>')" class="btn-sm btn-sm-primary" style="padding: 6px 10px; font-size: 10px;">
+                      ⚙️ Proses
+                    </button>
+
+                    <button onclick="triggerEditLetterModal('<%= s.id %>')" class="btn-sm btn-sm-secondary" style="padding: 6px 10px; font-size: 10px; background: rgba(13, 148, 136, 0.08); color: var(--secondary); border: 1px solid rgba(13, 148, 136, 0.15);">
+                      ✍️ Edit Isi
+                    </button>
+                    
+                    <% if (s.status === 'Disetujui') { %>
+                      <a href="/dashboard/surat/cetak/<%= s.id %>" target="_blank" class="btn-sm btn-sm-secondary" style="padding: 6px 10px; font-size: 10px; border: 1px solid var(--border);">
+                        🖨️ Cetak
+                      </a>
+                    <% } %>
+                  </div>
+                </td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr>
+              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">Belum ada antrean permohonan surat masuk.</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MODAL APPROVAL / UPDATE STATUS -->
+  <div class="modal-bg" id="approvalModal">
+    <div class="modal-card" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 style="font-size: 18px; font-weight: 800;">Proses Verifikasi Surat</h3>
+        <button onclick="closeModal('approvalModal')" class="modal-close">&times;</button>
+      </div>
+      <form action="/dashboard/surat/kelola" method="POST">
+        <input type="hidden" name="id" id="approval_id">
+        
+        <div class="form-group">
+          <label for="approval_status">PERUBAHAN STATUS DOKUMEN</label>
+          <select name="status" id="approval_status" class="form-control" required>
+            <!-- TAMPILKAN STATUS BERDASARKAN ROLE LOGIN SEBAGAI VALIDASI VISUAL -->
+            <% if (user.role === 'staff') { %>
+              <option value="Diverifikasi Sekdes">Teruskan ke Sekretaris Desa (Diverifikasi)</option>
+            <% } else if (user.role === 'sekdes') { %>
+              <option value="Disetujui Sekdes, Menunggu TTD Kades">Teruskan ke <%= settings.sebutan_kades || 'Kepala Desa' %> (Disetujui Sekdes)</option>
+            <% } else if (user.role === 'kades') { %>
+              <option value="Disetujui">Berikan Tanda Tangan & Setujui Final</option>
+            <% } %>
+            <option value="Ditolak">Tolak Pengajuan Dokumen</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="approval_catatan">CATATAN ADMINISTRASI / TANGGAPAN PENOLAKAN</label>
+          <textarea name="catatan" id="approval_catatan" rows="4" class="form-control" placeholder="Tuliskan catatan berkas, kelengkapan, atau alasan penolakan..."></textarea>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
+          <button type="button" onclick="closeModal('approvalModal')" class="btn-sm btn-sm-secondary" style="padding: 10px 20px;">Batal</button>
+          <button type="submit" class="btn-sm btn-sm-primary" style="padding: 10px 20px;">Simpan Verifikasi</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  </div>
+
+  <!-- MODAL BUAT SURAT MANUAL / OFFLINE (Akses: Staff, Sekdes) -->
+  <div class="modal-bg" id="addManualSuratModal">
+    <div class="modal-card" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 style="font-size: 18px; font-weight: 800;">Buat Surat Manual (Pelayanan Kantor)</h3>
+        <button onclick="closeModal('addManualSuratModal')" class="modal-close">&times;</button>
+      </div>
+      <form action="/dashboard/surat/manual" method="POST">
+        
+        <div class="form-group">
+          <label for="manual_nik">PILIH PENDUDUK (PEMOHON)</label>
+          <select name="nik" id="manual_nik" class="form-control" required style="width: 100%;">
+            <% if (penduduk && penduduk.length > 0) { %>
+              <% penduduk.forEach(function(p) { %>
+                <option value="<%= p.nik %>"><%= p.nama %> - NIK: <%= p.nik %></option>
+              <% }); %>
+            <% } %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="manual_jenis_surat">PILIH JENIS SURAT LAYANAN</label>
+          <select name="jenis_surat" id="manual_jenis_surat" class="form-control" onchange="toggleManualFormFields()" required>
+            <% if (templates && templates.length > 0) { %>
+              <% templates.forEach(function(t) { %>
+                <option value="<%= t.nama_surat %>"><%= t.nama_surat %></option>
+              <% }); %>
+            <% } else { %>
+              <option value="Surat Keterangan Domisili">Surat Keterangan Domisili</option>
+              <option value="Surat Keterangan Usaha (SKU)">Surat Keterangan Usaha (SKU)</option>
+              <option value="Surat Keterangan Tidak Mampu (SKTM)">Surat Keterangan Tidak Mampu (SKTM)</option>
+              <option value="Surat Keterangan Berkelakuan Baik (Pengantar SKCK)">Surat Keterangan Berkelakuan Baik (Pengantar SKCK)</option>
+              <option value="Surat Keterangan Kelahiran">Surat Keterangan Kelahiran</option>
+              <option value="Surat Keterangan Kematian">Surat Keterangan Kematian</option>
+              <option value="Surat Pengantar Nikah (N1-N4)">Surat Pengantar Nikah (N1-N4)</option>
+              <option value="Surat Keterangan Duda/Janda">Surat Keterangan Duda/Janda</option>
+              <option value="Surat Keterangan Penghasilan">Surat Keterangan Penghasilan</option>
+              <option value="Surat Keterangan Bersih Diri">Surat Keterangan Bersih Diri</option>
+              <option value="Surat Keterangan Perbedaan Nama">Surat Keterangan Perbedaan Nama</option>
+              <option value="Surat Keterangan Pengantar Kehilangan">Surat Keterangan Pengantar Kehilangan</option>
+            <% } %>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="manual_keperluan">KEPERLUAN / ALASAN PENGJUAN</label>
+          <input type="text" name="keperluan" class="form-control" placeholder="Contoh: Mengajukan Kredit Usaha Bank, Persyaratan Melamar Kerja" required>
+        </div>
+
+        <!-- MANUAL INPUT SKU -->
+        <div id="manual_fields_sku" style="display: none; border-top: 1px dashed var(--border); padding-top: 14px; margin-top: 14px;">
+          <h4 style="font-size: 13px; font-weight: 800; color: var(--primary); margin-bottom: 12px; text-transform: uppercase;">Detail Informasi Usaha</h4>
+          <div class="form-group">
+            <label for="manual_nama_usaha">NAMA USAHA</label>
+            <input type="text" name="nama_usaha" id="manual_nama_usaha" class="form-control" placeholder="Contoh: Toko Sembako Berkah">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="manual_jenis_usaha">BIDANG / JENIS USAHA</label>
+              <input type="text" name="jenis_usaha" id="manual_jenis_usaha" class="form-control" placeholder="Contoh: Perdagangan, Peternakan">
+            </div>
+            <div class="form-group">
+              <label for="manual_alamat_usaha">ALAMAT LOKASI USAHA</label>
+              <input type="text" name="alamat_usaha" id="manual_alamat_usaha" class="form-control" placeholder="Contoh: RT 03 RW 01 Dusun Krajan">
+            </div>
+          </div>
+        </div>
+
+        <!-- MANUAL INPUT KELAHIRAN -->
+        <div id="manual_fields_kelahiran" style="display: none; border-top: 1px dashed var(--border); padding-top: 14px; margin-top: 14px;">
+          <h4 style="font-size: 13px; font-weight: 800; color: var(--primary); margin-bottom: 12px; text-transform: uppercase;">Detail Data Kelahiran</h4>
+          <div class="form-group">
+            <label for="manual_nama_bayi">NAMA BAYI / ANAK</label>
+            <input type="text" name="nama_bayi" id="manual_nama_bayi" class="form-control" placeholder="Nama Lengkap Bayi">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="manual_nama_ibu">NAMA IBU KANDUNG</label>
+              <input type="text" name="nama_ibu" id="manual_nama_ibu" class="form-control" placeholder="Nama Lengkap Ibu">
+            </div>
+            <div class="form-group">
+              <label for="manual_hubungan">HUBUNGAN KELUARGA</label>
+              <input type="text" name="hubungan" value="Anak Kandung" class="form-control" placeholder="Hubungan pelapor dengan bayi">
+            </div>
+          </div>
+        </div>
+
+        <!-- MANUAL INPUT KEMATIAN -->
+        <div id="manual_fields_kematian" style="display: none; border-top: 1px dashed var(--border); padding-top: 14px; margin-top: 14px;">
+          <h4 style="font-size: 13px; font-weight: 800; color: var(--primary); margin-bottom: 12px; text-transform: uppercase;">Detail Data Jenazah</h4>
+          <div class="form-group">
+            <label for="manual_nama_jenazah">NAMA ALMARHUM / ALMARHUMAH</label>
+            <input type="text" name="nama_jenazah" id="manual_nama_jenazah" class="form-control" placeholder="Nama Lengkap Almarhum/ah">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label for="manual_tanggal_kematian">TANGGAL WAFAT</label>
+              <input type="date" name="tanggal_kematian" id="manual_tanggal_kematian" class="form-control">
+            </div>
+            <div class="form-group">
+              <label for="manual_hubungan_mati">HUBUNGAN KELUARGA</label>
+              <input type="text" name="hubungan" id="manual_hubungan_mati" class="form-control" placeholder="Hubungan pelapor dengan almarhum">
+            </div>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+          <button type="button" onclick="closeModal('addManualSuratModal')" class="btn-sm btn-sm-secondary" style="padding: 10px 20px;">Batal</button>
+          <button type="submit" class="btn-sm btn-sm-primary" style="padding: 10px 20px;">Buat & Verifikasi Surat</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Toggle manual fields based on selected letter type
+    function toggleManualFormFields() {
+      const type = document.getElementById('manual_jenis_surat').value;
+      
+      const sku = document.getElementById('manual_fields_sku');
+      const lahir = document.getElementById('manual_fields_kelahiran');
+      const mati = document.getElementById('manual_fields_kematian');
+      
+      sku.style.display = 'none';
+      lahir.style.display = 'none';
+      mati.style.display = 'none';
+      
+      document.getElementById('manual_nama_usaha').required = false;
+      document.getElementById('manual_nama_bayi').required = false;
+      document.getElementById('manual_nama_ibu').required = false;
+      document.getElementById('manual_nama_jenazah').required = false;
+      
+      if (type === 'Surat Keterangan Usaha (SKU)') {
+        sku.style.display = 'block';
+        document.getElementById('manual_nama_usaha').required = true;
+      } else if (type === 'Surat Keterangan Domisili Usaha') {
+        sku.style.display = 'block';
+        document.getElementById('manual_nama_usaha').required = true;
+      } else if (type === 'Surat Keterangan Kelahiran') {
+        lahir.style.display = 'block';
+        document.getElementById('manual_nama_bayi').required = true;
+        document.getElementById('manual_nama_ibu').required = true;
+      } else if (type === 'Surat Keterangan Perbedaan Nama') {
+        lahir.style.display = 'block';
+        document.getElementById('manual_nama_bayi').required = true;
+        document.getElementById('manual_nama_ibu').required = true;
+      } else if (type === 'Surat Keterangan Kematian') {
+        mati.style.display = 'block';
+        document.getElementById('manual_nama_jenazah').required = true;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      toggleManualFormFields();
+    });
+
+    // Modal Edit Konten Surat yang Tersimpan di Database
+    function triggerEditLetterModal(id) {
+      const container = document.getElementById('letter-data-' + id);
+      const nomor = container.getAttribute('data-nomor');
+      const isi = container.getAttribute('data-isi');
+      
+      document.getElementById('edit_letter_id').value = id;
+      document.getElementById('edit_nomor_surat').value = nomor;
+      document.getElementById('edit_isi_surat').value = isi;
+      
+      openModal('editLetterModal');
+    }
+  </script>
+
+  <!-- MODAL EDIT SURAT FISIK / TERSIMPAN DI DATABASE -->
+  <div class="modal-bg" id="editLetterModal">
+    <div class="modal-card" style="max-width: 650px; width: 90%;">
+      <div class="modal-header">
+        <h3 style="font-size: 18px; font-weight: 800;">✍️ Edit Naskah & Nomor Surat Resmi</h3>
+        <button onclick="closeModal('editLetterModal')" class="modal-close">&times;</button>
+      </div>
+      <form action="/dashboard/surat/edit-konten" method="POST">
+        <input type="hidden" name="id" id="edit_letter_id">
+        
+        <div class="form-group">
+          <label for="edit_nomor_surat">NOMOR SURAT RESMI</label>
+          <input type="text" name="nomor_surat" id="edit_nomor_surat" class="form-control" placeholder="Contoh: 470 / 123 / Pem / 2026" required>
+          <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Sesuaikan nomor surat resmi ini mengikuti penomoran fisik kelurahan.</p>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_isi_surat">PARAGRAF KETERANGAN/ISI SURAT</label>
+          <textarea name="isi_surat" id="edit_isi_surat" rows="8" class="form-control" placeholder="Isi naskah keterangan surat..." required style="line-height: 1.6; font-size: 14px; font-family: inherit;"></textarea>
+          <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Perubahan teks di atas akan langsung disimpan di database relasional dan dicetak persis pada surat fisik warga tanpa mempengaruhi template surat global.</p>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px;">
+          <button type="button" onclick="closeModal('editLetterModal')" class="btn-sm btn-sm-secondary" style="padding: 10px 20px;">Batal</button>
+          <button type="submit" class="btn-sm btn-sm-primary" style="padding: 10px 20px;">💾 Simpan Naskah</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<%- include('../partials/dashboard-footer') %>

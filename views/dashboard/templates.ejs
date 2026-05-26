@@ -1,0 +1,180 @@
+<%- include('../partials/dashboard-header') %>
+
+  <div class="card-panel" style="max-width: 900px; margin: 0 auto;">
+    <div class="panel-header" style="flex-wrap: wrap; gap: 16px;">
+      <h3>📝 Manajemen Template Surat & Wording</h3>
+      <button onclick="openModal('addTemplateModal')" class="btn-sm btn-sm-primary" style="padding: 8px 16px;">
+        ➕ Tambah Template
+      </button>
+    </div>
+
+    <!-- GUIDE BOX FOR PLACEHOLDERS -->
+    <div style="background: rgba(14, 165, 233, 0.05); border: 1px solid rgba(14, 165, 233, 0.15); border-radius: var(--radius-sm); padding: 18px; margin-bottom: 24px; font-size: 13px; color: var(--text-dark); line-height: 1.6;">
+      <h4 style="font-weight: 800; color: var(--primary); margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">💡 Petunjuk Kustomisasi Template:</h4>
+      <p>Anda dapat mengedit teks pernyataan di bawah secara langsung. Untuk menyisipkan data dinamis yang diisi warga saat pengajuan, gunakan kode placeholder (dengan tanda kurung kurawal) berikut:</p>
+      <ul style="margin-left: 20px; margin-top: 6px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 4px;">
+        <li>🔹 <code>{keperluan}</code> &rarr; Alasan pengajuan</li>
+        <li>🔹 <code>{nama_usaha}</code> &rarr; Nama usaha (Khusus SKU)</li>
+        <li>🔹 <code>{jenis_usaha}</code> &rarr; Bidang usaha (Khusus SKU)</li>
+        <li>🔹 <code>{alamat_usaha}</code> &rarr; Alamat usaha (Khusus SKU)</li>
+        <li>🔹 <code>{nama_bayi}</code> &rarr; Nama bayi (Khusus Kelahiran)</li>
+        <li>🔹 <code>{nama_ibu}</code> &rarr; Ibu kandung (Khusus Kelahiran)</li>
+        <li>🔹 <code>{nama_jenazah}</code> &rarr; Nama almarhum (Khusus Kematian)</li>
+        <li>🔹 <code>{tanggal_kematian}</code> &rarr; Tanggal wafat (Khusus Kematian)</li>
+      </ul>
+      <p style="margin-top: 10px; font-size: 12px; color: var(--text-muted);">
+        <em>Catatan Nomor Kode: Gunakan <code>{CODE}</code> untuk kode unik surat dan <code>{YEAR}</code> untuk tahun berjalan.</em>
+      </p>
+    </div>
+
+    <% if (success) { %>
+      <div class="alert alert-success">
+        <span>✓</span>
+        <div>
+          <% if (success === 'created') { %>
+            Template surat baru berhasil ditambahkan.
+          <% } else { %>
+            Perubahan template surat resmi berhasil disimpan ke database.
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+
+    <% if (error) { %>
+      <div class="alert alert-danger">
+        <span>⚠️</span>
+        <div>
+          <% if (error === 'missing_fields') { %>
+            Semua field wajib diisi.
+          <% } else if (error === 'already_exists') { %>
+            Template sudah ada (ID atau nama surat duplikat).
+          <% } else if (error === 'invalid_id') { %>
+            ID template tidak valid.
+          <% } else { %>
+            <%= error %>
+          <% } %>
+        </div>
+      </div>
+    <% } %>
+
+    <div class="table-responsive">
+      <table class="table-custom">
+        <thead>
+          <tr>
+            <th>Jenis Surat</th>
+            <th>Format Nomor Surat</th>
+            <th>Wording Template</th>
+            <th style="text-align: center;">Tindakan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (templates && templates.length > 0) { %>
+            <% templates.forEach(function(t) { %>
+              <tr>
+                <td style="font-weight: 800; white-space: nowrap;"><%= t.nama_surat %></td>
+                <td style="font-family: monospace; font-size: 12px; color: var(--text-muted);"><%= t.nomor_kode %></td>
+                <td style="max-width: 320px; font-size: 13px; line-height: 1.4; color: var(--text-dark); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;"><%= t.isi_surat %></td>
+                <td style="text-align: center;">
+                  <button onclick='editTemplateModal(<%- JSON.stringify(JSON.stringify(t)) %>)' class="btn-sm btn-sm-primary" style="padding: 6px 12px; font-size: 11px;">
+                    📝 Edit Template
+                  </button>
+                </td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr>
+              <td colspan="4" style="text-align: center; color: var(--text-muted); padding: 30px;">Belum ada template surat yang terkonfigurasi.</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MODAL EDIT TEMPLATE SURAT -->
+  <div class="modal-bg" id="editTemplateModal">
+    <div class="modal-card" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 style="font-size: 18px; font-weight: 800;">Ubah Wording & Format Template</h3>
+        <button onclick="closeModal('editTemplateModal')" class="modal-close">&times;</button>
+      </div>
+      <form action="/dashboard/templates/edit" method="POST">
+        <input type="hidden" name="id" id="edit_template_id">
+
+        <div class="form-group">
+          <label for="edit_template_nama">JENIS SURAT LAYANAN (Tidak Dapat Diubah)</label>
+          <input type="text" id="edit_template_nama" class="form-control" style="background: #e2e8f0; color: var(--text-muted);" disabled>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_template_nomor">FORMAT NOMOR SURAT RESMI</label>
+          <input type="text" name="nomor_kode" id="edit_template_nomor" class="form-control" placeholder="Contoh: 470 / {CODE} / Kesra / {YEAR}" required>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_template_isi">PARAGRAF TATA BAHASA / WORDING SURAT</label>
+          <textarea name="isi_surat" id="edit_template_isi" rows="6" class="form-control" required></textarea>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+          <button type="button" onclick="closeModal('editTemplateModal')" class="btn-sm btn-sm-secondary" style="padding: 10px 20px;">Batal</button>
+          <button type="submit" class="btn-sm btn-sm-primary" style="padding: 10px 20px;">Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL TAMBAH TEMPLATE SURAT -->
+  <div class="modal-bg" id="addTemplateModal">
+    <div class="modal-card" style="max-width: 600px;">
+      <div class="modal-header">
+        <h3 style="font-size: 18px; font-weight: 800;">Tambah Template Surat Baru</h3>
+        <button onclick="closeModal('addTemplateModal')" class="modal-close">&times;</button>
+      </div>
+      <form action="/dashboard/templates/add" method="POST">
+        <div class="form-group">
+          <label for="add_template_nama">JENIS SURAT LAYANAN</label>
+          <input type="text" name="nama_surat" id="add_template_nama" class="form-control" placeholder="Contoh: Surat Pengantar KTP" required>
+        </div>
+
+        <div class="form-group">
+          <label for="add_template_id">ID TEMPLATE (Opsional)</label>
+          <input type="text" name="id" id="add_template_id" class="form-control" placeholder="Kosongkan untuk otomatis dari nama surat">
+        </div>
+
+        <div class="form-group">
+          <label for="add_template_nomor">FORMAT NOMOR SURAT RESMI</label>
+          <input type="text" name="nomor_kode" id="add_template_nomor" class="form-control" placeholder="Contoh: 470 / {CODE} / Pem / {YEAR}" required>
+        </div>
+
+        <div class="form-group">
+          <label for="add_template_isi">PARAGRAF TATA BAHASA / WORDING SURAT</label>
+          <textarea name="isi_surat" id="add_template_isi" rows="6" class="form-control" placeholder="Gunakan placeholder jika perlu, misal: {keperluan}" required></textarea>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 24px;">
+          <button type="button" onclick="closeModal('addTemplateModal')" class="btn-sm btn-sm-secondary" style="padding: 10px 20px;">Batal</button>
+          <button type="submit" class="btn-sm btn-sm-primary" style="padding: 10px 20px;">Simpan Template</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    function editTemplateModal(tDataString) {
+      try {
+        const t = JSON.parse(tDataString);
+        
+        document.getElementById('edit_template_id').value = t.id;
+        document.getElementById('edit_template_nama').value = t.nama_surat;
+        document.getElementById('edit_template_nomor').value = t.nomor_kode;
+        document.getElementById('edit_template_isi').value = t.isi_surat;
+        
+        openModal('editTemplateModal');
+      } catch (error) {
+        console.error('Gagal parsing data template:', error);
+      }
+    }
+  </script>
+
+<%- include('../partials/dashboard-footer') %>

@@ -1,0 +1,291 @@
+<%- include('../partials/dashboard-header') %>
+
+  <div class="card-panel">
+    <div class="panel-header" style="flex-wrap: wrap; gap: 16px;">
+      <h3>Sistem Kependudukan Desa (Data Penduduk)</h3>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <!-- Live Search Input -->
+        <input type="text" id="searchPenduduk" onkeyup="filterTable('searchPenduduk', 'tablePenduduk')" placeholder="🔍 Cari nama, NIK, atau dusun..." class="form-control" style="max-width: 250px; padding: 8px 12px; font-size: 13px; border-radius: var(--radius-sm);">
+        <button onclick="openModal('addPendudukModal')" class="btn-sm btn-sm-primary" style="padding: 8px 16px;">
+          ➕ Tambah Penduduk
+        </button>
+      </div>
+    </div>
+
+    <% if (error) { %>
+      <div class="alert alert-danger">
+        <span>⚠️</span>
+        <div><%= error %></div>
+      </div>
+    <% } %>
+
+    <% if (success) { %>
+      <div class="alert alert-success">
+        <span>✓</span>
+        <div><%= success %></div>
+      </div>
+    <% } %>
+
+    <div class="table-responsive">
+      <table class="table-custom" id="tablePenduduk">
+        <thead>
+          <tr>
+            <th>NIK</th>
+            <th>Nama Lengkap</th>
+            <th>No. KK</th>
+            <th>TTL</th>
+            <th>Pekerjaan</th>
+            <th>Dusun/Blok</th>
+            <th style="text-align: center;">Aksi</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (penduduk && penduduk.length > 0) { %>
+            <% penduduk.forEach(function(p) { %>
+              <tr>
+                <td style="font-weight: 700; color: var(--dark-light);"><%= p.nik %></td>
+                <td style="font-weight: 700;"><%= p.nama %></td>
+                <td><%= p.no_kk %></td>
+                <td><%= p.tempat_lahir %>, <%= p.tanggal_lahir %></td>
+                <td><%= p.pekerjaan %></td>
+                <td><span style="background: rgba(14, 165, 233, 0.08); color: var(--primary); padding: 4px 10px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 600;"><%= p.dusun %></span></td>
+                <td style="text-align: center;">
+                  <div style="display: flex; gap: 8px; justify-content: center;">
+                    <!-- Edit Button triggers dynamic modal population in dashboard.js -->
+                    <button onclick='editPendudukModal(<%- JSON.stringify(JSON.stringify(p)) %>)' class="btn-sm btn-sm-secondary" style="padding: 4px 10px; font-size: 11px;">
+                      📝 Edit
+                    </button>
+                    <a href="/dashboard/penduduk/hapus/<%= p.nik %>" onclick="return confirm('Apakah Anda yakin ingin menghapus data penduduk ini? Akun warga yang bersangkutan juga akan dihapus.')" class="btn-sm btn-sm-danger" style="padding: 4px 10px; font-size: 11px;">
+                      🗑️ Hapus
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr>
+              <td colspan="7" style="text-align: center; color: var(--text-muted); padding: 30px;">Belum ada data penduduk terdaftar.</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MODAL ADD PENDUDUK -->
+  <div class="modal-bg" id="addPendudukModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 style="font-size: 18px; font-weight: 800;">Tambah Penduduk Baru</h3>
+        <button onclick="closeModal('addPendudukModal')" class="modal-close">&times;</button>
+      </div>
+      <form action="/dashboard/penduduk" method="POST">
+        <div class="form-row">
+          <div class="form-group">
+            <label for="nik">NOMOR INDUK KEPENDUDUKAN (NIK)</label>
+            <input type="text" name="nik" class="form-control" placeholder="16 Digit NIK KTP" maxlength="16" required>
+          </div>
+          <div class="form-group">
+            <label for="nama">NAMA LENGKAP</label>
+            <input type="text" name="nama" class="form-control" placeholder="Nama Lengkap" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="no_kk">NOMOR KARTU KELUARGA (KK)</label>
+            <input type="text" name="no_kk" class="form-control" placeholder="16 Digit Nomor KK" maxlength="16" required>
+          </div>
+          <div class="form-group">
+            <label for="gender">JENIS KELAMIN</label>
+            <select name="gender" class="form-control" required>
+              <option value="Laki-laki">Laki-laki</option>
+              <option value="Perempuan">Perempuan</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="tempat_lahir">TEMPAT LAHIR</label>
+            <input type="text" name="tempat_lahir" class="form-control" placeholder="Tempat Lahir" required>
+          </div>
+          <div class="form-group">
+            <label for="tanggal_lahir">TANGGAL LAHIR</label>
+            <input type="date" name="tanggal_lahir" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="alamat">ALAMAT JALAN / BLOK</label>
+            <input type="text" name="alamat" class="form-control" placeholder="Alamat Blok / RT / RW" required>
+          </div>
+          <div class="form-group">
+            <label for="dusun">DUSUN WILAYAH</label>
+            <select name="dusun" class="form-control" required>
+              <option value="Krajan">Krajan</option>
+              <option value="Sari Mulyo">Sari Mulyo</option>
+              <option value="Tirta Jaya">Tirta Jaya</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="agama">AGAMA</label>
+            <select name="agama" class="form-control" required>
+              <option value="Islam">Islam</option>
+              <option value="Kristen">Kristen</option>
+              <option value="Katolik">Katolik</option>
+              <option value="Hindu">Hindu</option>
+              <option value="Budha">Budha</option>
+              <option value="Konghucu">Konghucu</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="status_kawin">STATUS PERKAWINAN</label>
+            <select name="status_kawin" class="form-control" required>
+              <option value="Belum Kawin">Belum Kawin</option>
+              <option value="Kawin">Kawin</option>
+              <option value="Cerai Hidup">Cerai Hidup</option>
+              <option value="Cerai Mati">Cerai Mati</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="pekerjaan">PEKERJAAN</label>
+            <input type="text" name="pekerjaan" class="form-control" placeholder="Pekerjaan Utama" required>
+          </div>
+          <div class="form-group">
+            <label for="pendidikan">PENDIDIKAN TERAKHIR</label>
+            <select name="pendidikan" class="form-control" required>
+              <option value="Tidak/Belum Sekolah">Tidak/Belum Sekolah</option>
+              <option value="SD/Sederajat">SD/Sederajat</option>
+              <option value="SLTP/Sederajat">SLTP/Sederajat</option>
+              <option value="SLTA/Sederajat">SLTA/Sederajat</option>
+              <option value="Diploma/Sarjana">Diploma/Sarjana</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
+          <button type="button" onclick="closeModal('addPendudukModal')" class="btn-sm btn-sm-secondary" style="padding: 10px 20px;">Batal</button>
+          <button type="submit" class="btn-sm btn-sm-primary" style="padding: 10px 20px;">Simpan Penduduk</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL EDIT PENDUDUK -->
+  <div class="modal-bg" id="editPendudukModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 style="font-size: 18px; font-weight: 800;">Edit Data Penduduk</h3>
+        <button onclick="closeModal('editPendudukModal')" class="modal-close">&times;</button>
+      </div>
+      <form action="/dashboard/penduduk/edit" method="POST">
+        <input type="hidden" name="old_nik" id="edit_old_nik">
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label for="nik">NOMOR INDUK KEPENDUDUKAN (NIK)</label>
+            <input type="text" name="nik" id="edit_nik" class="form-control" placeholder="NIK KTP" maxlength="16" required>
+          </div>
+          <div class="form-group">
+            <label for="nama">NAMA LENGKAP</label>
+            <input type="text" name="nama" id="edit_nama" class="form-control" placeholder="Nama Lengkap" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="no_kk">NOMOR KARTU KELUARGA (KK)</label>
+            <input type="text" name="no_kk" id="edit_no_kk" class="form-control" placeholder="Nomor KK" maxlength="16" required>
+          </div>
+          <div class="form-group">
+            <label for="gender">JENIS KELAMIN</label>
+            <select name="gender" id="edit_gender" class="form-control" required>
+              <option value="Laki-laki">Laki-laki</option>
+              <option value="Perempuan">Perempuan</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="tempat_lahir">TEMPAT LAHIR</label>
+            <input type="text" name="tempat_lahir" id="edit_tempat_lahir" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="tanggal_lahir">TANGGAL LAHIR</label>
+            <input type="date" name="tanggal_lahir" id="edit_tanggal_lahir" class="form-control" required>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="alamat">ALAMAT JALAN / BLOK</label>
+            <input type="text" name="alamat" id="edit_alamat" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="dusun">DUSUN WILAYAH</label>
+            <select name="dusun" id="edit_dusun" class="form-control" required>
+              <option value="Krajan">Krajan</option>
+              <option value="Sari Mulyo">Sari Mulyo</option>
+              <option value="Tirta Jaya">Tirta Jaya</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="agama">AGAMA</label>
+            <select name="agama" id="edit_agama" class="form-control" required>
+              <option value="Islam">Islam</option>
+              <option value="Kristen">Kristen</option>
+              <option value="Katolik">Katolik</option>
+              <option value="Hindu">Hindu</option>
+              <option value="Budha">Budha</option>
+              <option value="Konghucu">Konghucu</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="status_kawin">STATUS PERKAWINAN</label>
+            <select name="status_kawin" id="edit_status_kawin" class="form-control" required>
+              <option value="Belum Kawin">Belum Kawin</option>
+              <option value="Kawin">Kawin</option>
+              <option value="Cerai Hidup">Cerai Hidup</option>
+              <option value="Cerai Mati">Cerai Mati</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="pekerjaan">PEKERJAAN</label>
+            <input type="text" name="pekerjaan" id="edit_pekerjaan" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label for="pendidikan">PENDIDIKAN TERAKHIR</label>
+            <select name="pendidikan" id="edit_pendidikan" class="form-control" required>
+              <option value="Tidak/Belum Sekolah">Tidak/Belum Sekolah</option>
+              <option value="SD/Sederajat">SD/Sederajat</option>
+              <option value="SLTP/Sederajat">SLTP/Sederajat</option>
+              <option value="SLTA/Sederajat">SLTA/Sederajat</option>
+              <option value="Diploma/Sarjana">Diploma/Sarjana</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
+          <button type="button" onclick="closeModal('editPendudukModal')" class="btn-sm btn-sm-secondary" style="padding: 10px 20px;">Batal</button>
+          <button type="submit" class="btn-sm btn-sm-primary" style="padding: 10px 20px;">Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<%- include('../partials/dashboard-footer') %>

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= settings.nama_desa || 'Desa Ujunggebang' %> - Portal Desa Digital Modern</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="navbar">
+    <div class="container nav-container">
+      <a href="/" class="logo">
+        <div class="logo-icon <%= settings.logo ? 'has-logo' : '' %>" style="display: flex; align-items: center; justify-content: center; overflow: hidden; border-radius: var(--radius-sm);">
+          <% if (settings.logo) { %>
+            <img src="<%= settings.logo %>" alt="Logo" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+          <% } else { %>
+            <%= settings.nama_desa ? settings.nama_desa.replace('Desa ', '').charAt(0) : 'U' %>
+          <% } %>
+        </div>
+        <div class="logo-text">
+          <span class="logo-title"><%= settings.nama_desa || 'Desa Ujunggebang' %></span>
+          <span class="logo-subtitle">Kec. <%= settings.kecamatan || 'Sukra' %></span>
+        </div>
+      </a>
+      
+      <ul class="nav-menu">
+        <li><a href="/" class="nav-link">Beranda</a></li>
+        <li><a href="/profil" class="nav-link">Profil Desa</a></li>
+        <li><a href="/berita" class="nav-link">Berita & Kegiatan</a></li>
+        <li><a href="/keuangan" class="nav-link">Keuangan APBDes</a></li>
+        <% const navLinks = (settings && Array.isArray(settings.nav_links)) ? settings.nav_links : []; %>
+        <% if (navLinks.length > 0) { %>
+          <% navLinks.forEach(function(link) { %>
+            <% if (link && link.url && link.label) { %>
+              <li><a href="<%= link.url %>" class="nav-link"><%= link.label %></a></li>
+            <% } %>
+          <% }); %>
+        <% } %>
+        <% if (user) { %>
+          <li><a href="/dashboard" class="nav-btn">Dashboard (<%= user.role.toUpperCase() %>)</a></li>
+        <% } else { %>
+          <li><a href="/login" class="nav-btn">Masuk Portal</a></li>
+        <% } %>
+      </ul>
+    </div>
+  </nav>

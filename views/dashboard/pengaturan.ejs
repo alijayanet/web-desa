@@ -1,0 +1,430 @@
+<%- include('../partials/dashboard-header') %>
+
+  <div class="card-panel" style="max-width: 800px; margin: 0 auto;">
+    <div class="panel-header">
+      <h3>⚙️ Pengaturan Profil Umum Desa</h3>
+    </div>
+
+    <% if (success) { %>
+      <div class="alert alert-success">
+        <span>✓</span>
+        <div>Konfigurasi profil desa berhasil disimpan dan diperbarui.</div>
+      </div>
+    <% } %>
+
+    <form action="/dashboard/pengaturan" method="POST" enctype="multipart/form-data">
+      
+      <!-- LOGO UPLOAD & PREVIEW SECTION -->
+      <div style="background: rgba(14, 165, 233, 0.03); border: 1px dashed var(--primary); border-radius: var(--radius-md); padding: 24px; margin-bottom: 24px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap;">
+        <div style="width: 100px; height: 100px; border-radius: var(--radius-sm); background: var(--white); display: flex; align-items: center; justify-content: center; overflow: hidden; border: 2px solid var(--border); box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); padding: 8px;">
+          <% if (settings.logo) { %>
+            <img src="<%= settings.logo %>" alt="Logo Desa" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+          <% } else { %>
+            <span style="font-size: 36px; user-select: none;">🏛️</span>
+          <% } %>
+        </div>
+        <div style="flex: 1; min-width: 250px;">
+          <h4 style="font-size: 14px; font-weight: 800; margin-bottom: 6px; color: var(--text-dark); letter-spacing: 0.5px;">LOGO RESMI KANTOR DESA</h4>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4;">Unggah logo desa dalam format gambar (.png, .jpg, .jpeg, .webp). Logo ini akan secara dinamis disematkan pada Kop Surat Resmi (A4) yang dapat di-print warga dan juga portal depan publik desa.</p>
+          <input type="file" id="logo" name="logo" class="form-control" accept="image/*" style="font-size: 12px; padding: 6px 12px;">
+        </div>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label for="nama_desa">NAMA DESA</label>
+          <input type="text" id="nama_desa" name="nama_desa" value="<%= settings.nama_desa %>" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label for="kecamatan">KECAMATAN</label>
+          <input type="text" id="kecamatan" name="kecamatan" value="<%= settings.kecamatan %>" class="form-control" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="kabupaten">KABUPATEN</label>
+          <input type="text" id="kabupaten" name="kabupaten" value="<%= settings.kabupaten %>" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label for="provinsi">PROVINSI</label>
+          <input type="text" id="provinsi" name="provinsi" value="<%= settings.provinsi %>" class="form-control" required>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label for="kode_pos">KODE POS</label>
+          <input type="text" id="kode_pos" name="kode_pos" value="<%= settings.kode_pos %>" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label for="telepon">NOMOR TELEPON KANTOR DESA</label>
+          <input type="text" id="telepon" name="telepon" value="<%= settings.telepon %>" class="form-control" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="whatsapp">NOMOR WHATSAPP (UNTUK KONTAK & NOTIF)</label>
+        <input type="text" id="whatsapp" name="whatsapp" value="<%= settings.whatsapp || '' %>" class="form-control" placeholder="Contoh: 62812xxxxxxx">
+      </div>
+
+      <div class="form-group">
+        <label for="wa_recipients">PENERIMA NOTIF WHATSAPP (STAFF/ADMIN)</label>
+        <textarea id="wa_recipients" name="wa_recipients" rows="3" class="form-control" placeholder="Satu nomor per baris. Contoh: 62812xxxxxxx"><%= (settings.wa_recipients && settings.wa_recipients.length > 0) ? settings.wa_recipients.join('\n') : '' %></textarea>
+        <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px; line-height: 1.4;">Jika diisi, semua laporan/pengajuan via WhatsApp akan dikirim ke daftar ini. Maksimal 10 nomor.</p>
+      </div>
+
+      <div class="form-group">
+        <label for="email">EMAIL RESMI DESA</label>
+        <input type="email" id="email" name="email" value="<%= settings.email %>" class="form-control" required>
+      </div>
+
+      <div class="form-group">
+        <label for="alamat_kantor">ALAMAT LENGKAP KANTOR DESA</label>
+        <input type="text" id="alamat_kantor" name="alamat_kantor" value="<%= settings.alamat_kantor %>" class="form-control" required>
+      </div>
+
+      <div class="form-group" style="background: rgba(13, 148, 136, 0.04); border: 1px solid rgba(13, 148, 136, 0.18); border-radius: var(--radius-md); padding: 18px; margin-top: 18px;">
+        <div style="display:flex; justify-content: space-between; gap: 12px; align-items: center; flex-wrap: wrap;">
+          <div style="font-weight: 900; letter-spacing: 0.5px;">LOKASI KANTOR (GEO-TAGGING ABSENSI)</div>
+          <button type="button" class="btn-sm btn-sm-secondary" id="btnOfficeLocate" style="padding: 8px 12px;">📍 Ambil dari GPS</button>
+        </div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; line-height: 1.4;">
+          Absensi hanya diterima jika lokasi berada dalam radius kantor desa. Gunakan tombol di atas untuk mengisi koordinat kantor dari GPS perangkat.
+        </div>
+        <div class="form-row" style="margin-top: 12px;">
+          <div class="form-group" style="margin: 0;">
+            <label for="office_lat">LATITUDE KANTOR</label>
+            <input type="text" id="office_lat" name="office_lat" value="<%= (settings.office_lat !== null && settings.office_lat !== undefined) ? settings.office_lat : '' %>" class="form-control" placeholder="-6.123456">
+          </div>
+          <div class="form-group" style="margin: 0;">
+            <label for="office_lng">LONGITUDE KANTOR</label>
+            <input type="text" id="office_lng" name="office_lng" value="<%= (settings.office_lng !== null && settings.office_lng !== undefined) ? settings.office_lng : '' %>" class="form-control" placeholder="107.123456">
+          </div>
+        </div>
+        <div class="form-row" style="margin-top: 12px;">
+          <div class="form-group" style="margin: 0;">
+            <label for="office_radius_m">RADIUS AREA (METER)</label>
+            <input type="number" id="office_radius_m" name="office_radius_m" value="<%= settings.office_radius_m || 200 %>" class="form-control" min="10" max="5000" step="1">
+          </div>
+          <div class="form-group" style="margin: 0;">
+            <label>&nbsp;</label>
+            <div id="officeLocateStatus" style="font-size: 12px; color: var(--text-muted); padding: 10px 12px; border-radius: var(--radius-sm); background: rgba(15, 23, 42, 0.03); border: 1px solid var(--border);">
+              Status GPS: belum diambil
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group" style="border-top: 1px dashed var(--border); padding-top: 20px; margin-top: 20px;">
+        <label for="sebutan_kades">SEBUTAN JABATAN KEPALA DESA (KADES / KUWU)</label>
+        <select name="sebutan_kades" id="sebutan_kades" class="form-control" required>
+          <option value="Kepala Desa" <%= settings.sebutan_kades === 'Kepala Desa' ? 'selected' : '' %>>Kepala Desa (Kades)</option>
+          <option value="Kuwu" <%= settings.sebutan_kades === 'Kuwu' ? 'selected' : '' %>>Kuwu</option>
+        </select>
+        <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Pilih sebutan jabatan pemimpin desa Anda. Sebutan ini akan secara otomatis menyesuaikan sebutan di seluruh sistem dashboard dan cetakan Kop surat resmi warga.</p>
+      </div>
+
+      <div class="form-row" style="margin-top: 14px;">
+        <div class="form-group">
+          <label for="kades">NAMA <%= (settings.sebutan_kades || 'Kepala Desa').toUpperCase() %></label>
+          <input type="text" id="kades" name="kades" value="<%= settings.kades %>" class="form-control" required>
+        </div>
+        <div class="form-group">
+          <label for="sekdes">NAMA SEKRETARIS DESA (SEKDES)</label>
+          <input type="text" id="sekdes" name="sekdes" value="<%= settings.sekdes %>" class="form-control" required>
+        </div>
+      </div>
+
+      <div class="form-group" style="border-top: 1px dashed var(--border); padding-top: 20px; margin-top: 20px;">
+        <label for="visi">VISI DESA UJUNGGEBANG</label>
+        <textarea id="visi" name="visi" rows="3" class="form-control" required><%= settings.visi %></textarea>
+      </div>
+
+      <div class="form-group">
+        <label for="misi">MISI DESA UJUNGGEBANG (Satu Misi Per Baris / Pisahkan dengan Baris Baru)</label>
+        <textarea id="misi" name="misi" rows="6" class="form-control" required><%= settings.misi ? settings.misi.join('\n') : '' %></textarea>
+      </div>
+
+      <div class="form-group" style="border-top: 1px dashed var(--border); padding-top: 20px; margin-top: 20px;">
+        <label>MENU NAVBAR (LINK EKSTERNAL)</label>
+        <textarea id="nav_links" name="nav_links" style="display:none;"><%= (settings.nav_links && settings.nav_links.length > 0) ? settings.nav_links.map(function(l){ return (l.label || '').trim() + '|' + (l.url || '').trim(); }).join('\n') : '' %></textarea>
+        
+        <div class="navlinks-editor" id="navlinks_editor">
+          <div class="navlinks-toolbar">
+            <button type="button" class="btn-sm btn-sm-primary" onclick="navLinksAddRow()">➕ Tambah Link</button>
+          </div>
+          <div class="navlinks-table">
+            <div class="navlinks-head">
+              <div>Label</div>
+              <div>URL</div>
+              <div></div>
+            </div>
+            <div class="navlinks-body" id="navlinks_body"></div>
+          </div>
+        </div>
+
+        <p style="font-size: 11px; color: var(--text-muted); margin-top: 6px; line-height: 1.4;">Menu ini tampil di navbar website publik dan tombol cepat di header dashboard. Maksimal 10 link. Wajib diawali http:// atau https://</p>
+      </div>
+
+      <div class="form-group" style="border-top: 1px dashed var(--border); padding-top: 20px; margin-top: 20px;">
+        <label>STRUKTUR ORGANISASI PEMERINTAH DESA</label>
+        <textarea id="struktur_organisasi" name="struktur_organisasi" style="display:none;"><%= (settings.struktur_organisasi && settings.struktur_organisasi.length > 0) ? settings.struktur_organisasi.map(function(l){ return (l.jabatan || '').trim() + '|' + (l.nama || '').trim(); }).join('\n') : '' %></textarea>
+
+        <div class="org-editor" id="org_editor">
+          <div class="org-toolbar">
+            <button type="button" class="btn-sm btn-sm-primary" onclick="orgAddRow()">➕ Tambah Jabatan</button>
+          </div>
+          <div class="org-table">
+            <div class="org-head">
+              <div>Jabatan</div>
+              <div>Nama</div>
+              <div></div>
+            </div>
+            <div class="org-body" id="org_body"></div>
+          </div>
+        </div>
+
+        <p style="font-size: 11px; color: var(--text-muted); margin-top: 6px; line-height: 1.4;">Daftar ini tampil di halaman /profil sebagai struktur organisasi. Maksimal 20 baris.</p>
+      </div>
+
+      <button type="submit" class="btn-sm btn-sm-primary" style="width: 100%; padding: 14px; font-size: 15px; border-radius: var(--radius-sm); margin-top: 20px;">
+        💾 Simpan Perubahan Profil Desa
+      </button>
+
+    </form>
+  </div>
+
+  <script>
+    (function () {
+      const btn = document.getElementById('btnOfficeLocate');
+      const latEl = document.getElementById('office_lat');
+      const lngEl = document.getElementById('office_lng');
+      const statusEl = document.getElementById('officeLocateStatus');
+      if (!btn || !latEl || !lngEl || !statusEl) return;
+
+      const setStatus = (text) => {
+        statusEl.textContent = text;
+      };
+
+      btn.addEventListener('click', async () => {
+        if (!navigator.geolocation) {
+          setStatus('Status GPS: tidak didukung di browser ini');
+          return;
+        }
+        setStatus('Status GPS: mengambil lokasi...');
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const lat = pos && pos.coords ? pos.coords.latitude : null;
+            const lng = pos && pos.coords ? pos.coords.longitude : null;
+            const acc = pos && pos.coords ? pos.coords.accuracy : null;
+            if (typeof lat === 'number') latEl.value = String(lat);
+            if (typeof lng === 'number') lngEl.value = String(lng);
+            const accText = (typeof acc === 'number') ? ` (±${Math.round(acc)}m)` : '';
+            setStatus('Status GPS: terisi' + accText);
+          },
+          (err) => {
+            setStatus('Status GPS: gagal (' + (err && err.message ? err.message : 'permission denied') + ')');
+          },
+          { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+        );
+      });
+    })();
+
+    function navLinksParseFromTextarea() {
+      const textarea = document.getElementById('nav_links');
+      const raw = (textarea && textarea.value ? textarea.value : '').trim();
+      if (!raw) return [];
+      return raw.split('\n')
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0)
+        .map((line) => {
+          const parts = line.split('|').map((p) => p.trim()).filter((p) => p.length > 0);
+          if (parts.length === 0) return null;
+          if (parts.length === 1) return { label: parts[0], url: parts[0] };
+          return { label: parts[0], url: parts.slice(1).join('|') };
+        })
+        .filter(Boolean);
+    }
+
+    function navLinksSerializeToTextarea() {
+      const textarea = document.getElementById('nav_links');
+      const rows = document.querySelectorAll('#navlinks_body .navlinks-row');
+      const lines = [];
+      rows.forEach((row) => {
+        const labelEl = row.querySelector('input[data-field="label"]');
+        const urlEl = row.querySelector('input[data-field="url"]');
+        const label = (labelEl && labelEl.value ? labelEl.value : '').trim();
+        const url = (urlEl && urlEl.value ? urlEl.value : '').trim();
+        if (!label || !url) return;
+        lines.push(label + '|' + url);
+      });
+      if (textarea) textarea.value = lines.join('\n');
+    }
+
+    function navLinksMakeRow(data) {
+      const row = document.createElement('div');
+      row.className = 'navlinks-row';
+
+      const colLabel = document.createElement('div');
+      const inputLabel = document.createElement('input');
+      inputLabel.type = 'text';
+      inputLabel.className = 'form-control';
+      inputLabel.placeholder = 'Contoh: CCTV';
+      inputLabel.setAttribute('data-field', 'label');
+      inputLabel.value = data && data.label ? data.label : '';
+      colLabel.appendChild(inputLabel);
+
+      const colUrl = document.createElement('div');
+      const inputUrl = document.createElement('input');
+      inputUrl.type = 'url';
+      inputUrl.className = 'form-control';
+      inputUrl.placeholder = 'https://contoh.com';
+      inputUrl.setAttribute('data-field', 'url');
+      inputUrl.value = data && data.url ? data.url : '';
+      colUrl.appendChild(inputUrl);
+
+      const colAction = document.createElement('div');
+      colAction.style.display = 'flex';
+      colAction.style.justifyContent = 'flex-end';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-sm btn-sm-danger';
+      btn.textContent = 'Hapus';
+      btn.onclick = () => {
+        row.remove();
+        navLinksSerializeToTextarea();
+      };
+      colAction.appendChild(btn);
+
+      [colLabel, colUrl, colAction].forEach((c) => row.appendChild(c));
+
+      [inputLabel, inputUrl].forEach((el) => {
+        el.addEventListener('input', navLinksSerializeToTextarea);
+        el.addEventListener('change', navLinksSerializeToTextarea);
+      });
+
+      return row;
+    }
+
+    function navLinksAddRow(prefill) {
+      const body = document.getElementById('navlinks_body');
+      if (!body) return;
+      const rowCount = body.querySelectorAll('.navlinks-row').length;
+      if (rowCount >= 10) return;
+      const row = navLinksMakeRow(prefill || { label: '', url: '' });
+      body.appendChild(row);
+      navLinksSerializeToTextarea();
+    }
+
+    function orgParseFromTextarea() {
+      const textarea = document.getElementById('struktur_organisasi');
+      const raw = (textarea && textarea.value ? textarea.value : '').trim();
+      if (!raw) return [];
+      return raw.split('\n')
+        .map((l) => l.trim())
+        .filter((l) => l.length > 0)
+        .map((line) => {
+          const parts = line.split('|').map((p) => p.trim()).filter((p) => p.length > 0);
+          if (parts.length < 2) return null;
+          return { jabatan: parts[0], nama: parts.slice(1).join('|') };
+        })
+        .filter(Boolean);
+    }
+
+    function orgSerializeToTextarea() {
+      const textarea = document.getElementById('struktur_organisasi');
+      const rows = document.querySelectorAll('#org_body .org-row');
+      const lines = [];
+      rows.forEach((row) => {
+        const jabatanEl = row.querySelector('input[data-field="jabatan"]');
+        const namaEl = row.querySelector('input[data-field="nama"]');
+        const jabatan = (jabatanEl && jabatanEl.value ? jabatanEl.value : '').trim();
+        const nama = (namaEl && namaEl.value ? namaEl.value : '').trim();
+        if (!jabatan || !nama) return;
+        lines.push(jabatan + '|' + nama);
+      });
+      if (textarea) textarea.value = lines.join('\n');
+    }
+
+    function orgMakeRow(data) {
+      const row = document.createElement('div');
+      row.className = 'org-row';
+
+      const colJabatan = document.createElement('div');
+      const inputJabatan = document.createElement('input');
+      inputJabatan.type = 'text';
+      inputJabatan.className = 'form-control';
+      inputJabatan.placeholder = 'Contoh: Bendahara Desa';
+      inputJabatan.setAttribute('data-field', 'jabatan');
+      inputJabatan.value = data && data.jabatan ? data.jabatan : '';
+      colJabatan.appendChild(inputJabatan);
+
+      const colNama = document.createElement('div');
+      const inputNama = document.createElement('input');
+      inputNama.type = 'text';
+      inputNama.className = 'form-control';
+      inputNama.placeholder = 'Contoh: Budi Santoso';
+      inputNama.setAttribute('data-field', 'nama');
+      inputNama.value = data && data.nama ? data.nama : '';
+      colNama.appendChild(inputNama);
+
+      const colAction = document.createElement('div');
+      colAction.style.display = 'flex';
+      colAction.style.justifyContent = 'flex-end';
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'btn-sm btn-sm-danger';
+      btn.textContent = 'Hapus';
+      btn.onclick = () => {
+        row.remove();
+        orgSerializeToTextarea();
+      };
+      colAction.appendChild(btn);
+
+      [colJabatan, colNama, colAction].forEach((c) => row.appendChild(c));
+
+      [inputJabatan, inputNama].forEach((el) => {
+        el.addEventListener('input', orgSerializeToTextarea);
+        el.addEventListener('change', orgSerializeToTextarea);
+      });
+
+      return row;
+    }
+
+    function orgAddRow(prefill) {
+      const body = document.getElementById('org_body');
+      if (!body) return;
+      const rowCount = body.querySelectorAll('.org-row').length;
+      if (rowCount >= 20) return;
+      const row = orgMakeRow(prefill || { jabatan: '', nama: '' });
+      body.appendChild(row);
+      orgSerializeToTextarea();
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const initial = navLinksParseFromTextarea();
+      if (initial.length > 0) {
+        initial.slice(0, 10).forEach((item) => navLinksAddRow(item));
+      } else {
+        navLinksAddRow({ label: 'CCTV', url: 'https://cctv.alijaya.com' });
+      }
+
+      const initialOrg = orgParseFromTextarea();
+      if (initialOrg.length > 0) {
+        initialOrg.slice(0, 20).forEach((item) => orgAddRow(item));
+      } else {
+        orgAddRow({ jabatan: 'Staff Kesejahteraan & Pelayanan', nama: 'Andi Wijaya' });
+      }
+
+      const form = document.querySelector('form[action="/dashboard/pengaturan"]');
+      if (form) {
+        form.addEventListener('submit', () => {
+          navLinksSerializeToTextarea();
+          orgSerializeToTextarea();
+        });
+      }
+    });
+  </script>
+
+<%- include('../partials/dashboard-footer') %>

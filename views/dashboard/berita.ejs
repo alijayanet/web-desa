@@ -1,0 +1,234 @@
+<%- include('../partials/dashboard-header') %>
+
+  <div class="card-panel">
+    <div class="panel-header" style="flex-wrap: wrap; gap: 16px;">
+      <h3>Kelola Berita &amp; Artikel Desa</h3>
+      <button onclick="openModal('addBeritaModal')" class="btn-sm btn-sm-primary" style="padding: 8px 16px;">
+        ➕ Terbitkan Berita Baru
+      </button>
+    </div>
+
+    <% if (success) { %>
+      <div class="alert alert-success">
+        <span>✓</span>
+        <div>
+          <% if (success === 'created') { %>Berita baru berhasil diterbitkan!
+          <% } else if (success === 'updated') { %>Berita berhasil diperbarui!
+          <% } else if (success === 'deleted') { %>Berita berhasil dihapus!
+          <% } else { %><%= success %><% } %>
+        </div>
+      </div>
+    <% } %>
+
+    <% if (error) { %>
+      <div class="alert alert-danger">
+        <span>⚠️</span>
+        <div>
+          <% if (error === 'missing_fields') { %>Semua field wajib harus diisi.
+          <% } else if (error === 'notfound') { %>Berita tidak ditemukan.
+          <% } else { %><%= error %><% } %>
+        </div>
+      </div>
+    <% } %>
+
+    <div class="table-responsive">
+      <table class="table-custom">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Foto</th>
+            <th>Judul Artikel</th>
+            <th>Kategori</th>
+            <th>Media</th>
+            <th>Tanggal Terbit</th>
+            <th>Penulis</th>
+            <th style="text-align: center;">Tindakan</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% if (berita && berita.length > 0) { %>
+            <% berita.forEach(function(b) { %>
+              <tr>
+                <td style="font-weight: 700; color: var(--primary);"><%= b.id %></td>
+                <td>
+                  <% if (b.gambar && b.gambar !== 'berita_default.jpg') { %>
+                    <img src="/uploads/<%= b.gambar %>" alt="Foto" style="width: 52px; height: 40px; object-fit: cover; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1);">
+                  <% } else { %>
+                    <div style="width: 52px; height: 40px; background: rgba(14,165,233,0.1); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 18px;">📷</div>
+                  <% } %>
+                </td>
+                <td style="font-weight: 700; max-width: 220px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><%= b.judul %></td>
+                <td><span style="background: rgba(14, 165, 233, 0.08); color: var(--primary); padding: 4px 10px; border-radius: var(--radius-sm); font-size: 12px; font-weight: 600;"><%= b.kategori %></span></td>
+                <td style="text-align: center;">
+                  <% if (b.embed_url && b.embed_url.trim() !== '') { %>
+                    <span title="Ada embed media" style="font-size: 18px;">🎬</span>
+                  <% } else { %>
+                    <span style="color: var(--text-muted); font-size: 12px;">—</span>
+                  <% } %>
+                </td>
+                <td><%= b.tanggal %></td>
+                <td><%= b.penulis %></td>
+                <td style="text-align: center;">
+                  <div style="display: flex; gap: 8px; justify-content: center;">
+                    <button onclick='openEditBeritaModal(<%- JSON.stringify(JSON.stringify(b)) %>)' class="btn-sm btn-sm-secondary" style="padding: 4px 10px; font-size: 11px;">
+                      📝 Edit
+                    </button>
+                    <a href="/dashboard/berita/hapus/<%= b.id %>" onclick="return confirm('Apakah Anda yakin ingin menghapus artikel berita ini?')" class="btn-sm btn-sm-danger" style="padding: 4px 10px; font-size: 11px;">
+                      🗑️ Hapus
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr>
+              <td colspan="8" style="text-align: center; color: var(--text-muted); padding: 30px;">Belum ada berita yang diterbitkan. Klik tombol "Terbitkan Berita Baru" untuk memulai.</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- MODAL TAMBAH BERITA -->
+  <div class="modal-bg" id="addBeritaModal">
+    <div class="modal-card" style="max-width: 700px;">
+      <div class="modal-header">
+        <h3 style="font-size: 18px; font-weight: 800;">📰 Terbitkan Artikel Berita Baru</h3>
+        <button onclick="closeModal('addBeritaModal')" class="modal-close">&times;</button>
+      </div>
+      <form action="/dashboard/berita" method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+          <label for="judul">JUDUL ARTIKEL BERITA</label>
+          <input type="text" name="judul" id="add_judul" class="form-control" placeholder="Tuliskan Judul Berita yang Menarik" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="add_kategori">KATEGORI BERITA</label>
+            <select name="kategori" id="add_kategori" class="form-control" required>
+              <% if (typeof kategoriList !== 'undefined' && kategoriList.length > 0) { %>
+                <% kategoriList.forEach(function(kat) { %>
+                  <option value="<%= kat.nama %>"><%= kat.nama %></option>
+                <% }); %>
+              <% } else { %>
+                <option value="Kegiatan Desa">Kegiatan Desa</option>
+                <option value="Pengumuman">Pengumuman</option>
+                <option value="Pertanian">Pertanian</option>
+                <option value="Kesehatan">Kesehatan</option>
+              <% } %>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="add_ringkasan">RINGKASAN SINGKAT (Untuk Halaman Depan)</label>
+            <input type="text" name="ringkasan" id="add_ringkasan" class="form-control" placeholder="Tulis ringkasan berita 1 kalimat..." required>
+          </div>
+        </div>
+
+        <!-- Upload Foto Thumbnail -->
+        <div class="form-group">
+          <label for="add_gambar">📷 FOTO THUMBNAIL BERITA <span style="color: var(--text-muted); font-weight: 400;">(Opsional, maks. 5MB — .jpg/.png/.webp)</span></label>
+          <div id="add_foto_preview_wrap" style="display:none; margin-bottom: 10px;">
+            <img id="add_foto_preview" src="" alt="Preview" style="max-width: 100%; max-height: 200px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); object-fit: cover;">
+          </div>
+          <input type="file" name="gambar" id="add_gambar" class="form-control" accept="image/jpeg,image/jpg,image/png,image/webp,image/gif" onchange="previewFoto(this, 'add_foto_preview', 'add_foto_preview_wrap')" style="padding: 8px;">
+        </div>
+
+        <!-- Embed Media (YouTube / Video) -->
+        <div class="form-group">
+          <label for="add_embed_url">🎬 LINK VIDEO / EMBED YOUTUBE <span style="color: var(--text-muted); font-weight: 400;">(Opsional — paste link YouTube biasa)</span></label>
+          <input type="text" name="embed_url" id="add_embed_url" class="form-control" placeholder="Contoh: https://www.youtube.com/watch?v=XXXXXXX" oninput="previewEmbed(this.value, 'add_embed_frame_wrap', 'add_embed_frame')">
+          <div id="add_embed_frame_wrap" style="display:none; margin-top: 10px;">
+            <iframe id="add_embed_frame" src="" width="100%" height="220" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);"></iframe>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="add_konten">ISI / KONTEN ARTIKEL LENGKAP (Mendukung Teks HTML Dasar)</label>
+          <textarea name="konten" id="add_konten" rows="7" class="form-control" placeholder="Tulis paragraf berita lengkap di sini (gunakan <p> untuk paragraf baru)..." required></textarea>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
+          <button type="button" onclick="closeModal('addBeritaModal')" class="btn-sm btn-sm-secondary" style="padding: 10px 20px;">Batal</button>
+          <button type="submit" class="btn-sm btn-sm-primary" style="padding: 10px 20px;">🚀 Terbitkan Sekarang</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL EDIT BERITA -->
+  <div class="modal-bg" id="editBeritaModal">
+    <div class="modal-card" style="max-width: 700px;">
+      <div class="modal-header">
+        <h3 style="font-size: 18px; font-weight: 800;">📝 Edit Artikel Berita</h3>
+        <button onclick="closeModal('editBeritaModal')" class="modal-close">&times;</button>
+      </div>
+      <form action="/dashboard/berita/edit" method="POST" enctype="multipart/form-data">
+        <input type="hidden" name="id" id="edit_berita_id">
+        
+        <div class="form-group">
+          <label for="edit_berita_judul">JUDUL ARTIKEL BERITA</label>
+          <input type="text" name="judul" id="edit_berita_judul" class="form-control" required>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="edit_berita_kategori">KATEGORI BERITA</label>
+            <select name="kategori" id="edit_berita_kategori" class="form-control" required>
+              <% if (typeof kategoriList !== 'undefined' && kategoriList.length > 0) { %>
+                <% kategoriList.forEach(function(kat) { %>
+                  <option value="<%= kat.nama %>"><%= kat.nama %></option>
+                <% }); %>
+              <% } else { %>
+                <option value="Kegiatan Desa">Kegiatan Desa</option>
+                <option value="Pengumuman">Pengumuman</option>
+                <option value="Pertanian">Pertanian</option>
+                <option value="Kesehatan">Kesehatan</option>
+              <% } %>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="edit_berita_ringkasan">RINGKASAN SINGKAT</label>
+            <input type="text" name="ringkasan" id="edit_berita_ringkasan" class="form-control" required>
+          </div>
+        </div>
+
+        <!-- Foto Saat Ini + Opsi Ganti -->
+        <div class="form-group">
+          <label>📷 FOTO THUMBNAIL BERITA</label>
+          <div id="edit_foto_current" style="margin-bottom: 10px; display: none;">
+            <img id="edit_foto_current_img" src="" alt="Foto saat ini" style="max-width: 100%; max-height: 160px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); object-fit: cover; display: block; margin-bottom: 8px;">
+            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 13px; color: #ef4444; font-weight: 600;">
+              <input type="checkbox" name="hapus_gambar" id="edit_hapus_gambar" value="1" onchange="toggleHapusFoto(this)"> Hapus foto ini (kembali ke default)
+            </label>
+          </div>
+          <div id="edit_foto_preview_wrap" style="display:none; margin-bottom: 10px;">
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 6px;">📌 Foto baru (akan menggantikan foto lama):</p>
+            <img id="edit_foto_preview" src="" alt="Preview" style="max-width: 100%; max-height: 160px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); object-fit: cover;">
+          </div>
+          <input type="file" name="gambar" id="edit_gambar" class="form-control" accept="image/jpeg,image/jpg,image/png,image/webp,image/gif" onchange="previewFoto(this, 'edit_foto_preview', 'edit_foto_preview_wrap')" style="padding: 8px;">
+        </div>
+
+        <!-- Embed Media -->
+        <div class="form-group">
+          <label for="edit_embed_url">🎬 LINK VIDEO / EMBED YOUTUBE <span style="color: var(--text-muted); font-weight: 400;">(Kosongkan jika tidak ada)</span></label>
+          <input type="text" name="embed_url" id="edit_embed_url" class="form-control" placeholder="Contoh: https://www.youtube.com/watch?v=XXXXXXX" oninput="previewEmbed(this.value, 'edit_embed_frame_wrap', 'edit_embed_frame')">
+          <div id="edit_embed_frame_wrap" style="display:none; margin-top: 10px;">
+            <iframe id="edit_embed_frame" src="" width="100%" height="220" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen style="border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);"></iframe>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="edit_berita_konten">ISI / KONTEN ARTIKEL LENGKAP</label>
+          <textarea name="konten" id="edit_berita_konten" rows="7" class="form-control" required></textarea>
+        </div>
+
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
+          <button type="button" onclick="closeModal('editBeritaModal')" class="btn-sm btn-sm-secondary" style="padding: 10px 20px;">Batal</button>
+          <button type="submit" class="btn-sm btn-sm-primary" style="padding: 10px 20px;">💾 Simpan Perubahan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+<%- include('../partials/dashboard-footer') %>
