@@ -79,6 +79,7 @@ button, input, select, textarea {
   top: 0;
   z-index: 100;
   transition: var(--transition);
+  overflow: hidden;
 }
 
 .sidebar-logo {
@@ -166,6 +167,9 @@ button, input, select, textarea {
   flex-direction: column;
   gap: 8px;
   flex-grow: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding-right: 4px;
 }
 
 .sidebar-link {

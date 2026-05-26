@@ -258,7 +258,10 @@ const renderPenduduk = async (req, res) => {
       user: req.session.user,
       penduduk: allPenduduk,
       error: req.query.error || null,
-      success: req.query.success || null
+      success: req.query.success || null,
+      inserted: req.query.inserted || null,
+      updated: req.query.updated || null,
+      skipped: req.query.skipped || null
     });
   } catch (error) {
     console.error('Error saat memuat data kependudukan:', error);
@@ -355,6 +358,253 @@ const deletePenduduk = async (req, res) => {
   } catch (error) {
     console.error('Error saat menghapus penduduk:', error);
     res.redirect('/dashboard/penduduk?error=server_error');
+  }
+};
+
+const csvEscape = (value) => {
+  const s = String(value == null ? '' : value);
+  if (/[",\r\n;]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+};
+
+const pickDelimiter = (headerLine) => {
+  const line = String(headerLine || '');
+  const comma = (line.match(/,/g) || []).length;
+  const semi = (line.match(/;/g) || []).length;
+  return semi > comma ? ';' : ',';
+};
+
+const parseCsv = (text, delimiter) => {
+  const rows = [];
+  const s = String(text || '');
+  const sep = delimiter === ';' ? ';' : ',';
+  let row = [];
+  let field = '';
+  let i = 0;
+  let inQuotes = false;
+
+  const pushField = () => {
+    row.push(field);
+    field = '';
+  };
+  const pushRow = () => {
+    rows.push(row);
+    row = [];
+  };
+
+  while (i < s.length) {
+    const ch = s[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (s[i + 1] === '"') {
+          field += '"';
+          i += 2;
+          continue;
+        }
+        inQuotes = false;
+        i += 1;
+        continue;
+      }
+      field += ch;
+      i += 1;
+      continue;
+    }
+
+    if (ch === '"') {
+      inQuotes = true;
+      i += 1;
+      continue;
+    }
+    if (ch === '\r') {
+      i += 1;
+      continue;
+    }
+    if (ch === '\n') {
+      pushField();
+      pushRow();
+      i += 1;
+      continue;
+    }
+    if (ch === sep) {
+      pushField();
+      i += 1;
+      continue;
+    }
+    field += ch;
+    i += 1;
+  }
+  pushField();
+  pushRow();
+  return rows.filter((r) => r.some((c) => String(c || '').trim().length > 0));
+};
+
+const normalizeHeaderKey = (s) =>
+  String(s || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_]+/g, '_')
+    .replace(/^_+|_+$/g, '');
+
+const parseDateToIso = (value) => {
+  const s = String(value || '').trim();
+  if (!s) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
+  const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m) {
+    const dd = String(m[1]).padStart(2, '0');
+    const mm = String(m[2]).padStart(2, '0');
+    const yyyy = m[3];
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  return s;
+};
+
+const exportPendudukCsv = async (req, res) => {
+  try {
+    const rows = await db.all('SELECT * FROM penduduk ORDER BY nama ASC');
+    const headers = [
+      'nik',
+      'nama',
+      'no_kk',
+      'tempat_lahir',
+      'tanggal_lahir',
+      'gender',
+      'alamat',
+      'dusun',
+      'agama',
+      'status_kawin',
+      'pekerjaan',
+      'pendidikan',
+      'no_hp'
+    ];
+    const lines = [];
+    lines.push(headers.join(','));
+    for (const r of rows) {
+      const values = headers.map((h) => csvEscape(r && r[h] != null ? r[h] : ''));
+      lines.push(values.join(','));
+    }
+    const csv = '\ufeff' + lines.join('\n');
+    const tanggal = new Date().toISOString().split('T')[0];
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="penduduk-${tanggal}.csv"`);
+    res.send(csv);
+  } catch (error) {
+    console.error('Error export penduduk:', error);
+    res.redirect('/dashboard/penduduk?error=export_failed');
+  }
+};
+
+const importPendudukCsv = async (req, res) => {
+  if (!req.file || !req.file.buffer) return res.redirect('/dashboard/penduduk?error=import_file_required');
+  try {
+    const raw = req.file.buffer.toString('utf8').replace(/^\uFEFF/, '');
+    const firstLine = raw.split(/\r?\n/, 1)[0] || '';
+    const delimiter = pickDelimiter(firstLine);
+    const rows = parseCsv(raw, delimiter);
+    if (!rows.length) return res.redirect('/dashboard/penduduk?error=import_empty');
+
+    const header = rows[0].map((h) => normalizeHeaderKey(h));
+    const idx = {};
+    header.forEach((h, i) => {
+      if (h && idx[h] === undefined) idx[h] = i;
+    });
+    if (idx.nik === undefined || idx.nama === undefined) {
+      return res.redirect('/dashboard/penduduk?error=import_missing_headers');
+    }
+
+    let inserted = 0;
+    let updated = 0;
+    let skipped = 0;
+    const maxRows = 5000;
+    const dataRows = rows.slice(1, 1 + maxRows);
+
+    await db.run('BEGIN');
+    try {
+      for (const r of dataRows) {
+        const get = (key) => {
+          const i = idx[key];
+          if (i === undefined) return '';
+          return String(r[i] == null ? '' : r[i]).trim();
+        };
+
+        const nik = get('nik').replace(/[^0-9]/g, '');
+        const nama = get('nama');
+        if (!nik || nik.length !== 16 || !nama) {
+          skipped += 1;
+          continue;
+        }
+
+        const payload = {
+          nik,
+          nama,
+          no_kk: get('no_kk').replace(/[^0-9]/g, ''),
+          tempat_lahir: get('tempat_lahir'),
+          tanggal_lahir: parseDateToIso(get('tanggal_lahir')),
+          gender: get('gender') || 'Laki-laki',
+          alamat: get('alamat'),
+          dusun: get('dusun'),
+          agama: get('agama') || 'Islam',
+          status_kawin: get('status_kawin') || 'Belum Kawin',
+          pekerjaan: get('pekerjaan'),
+          pendidikan: get('pendidikan') || 'Tidak/Belum Sekolah',
+          no_hp: get('no_hp').replace(/[^0-9]/g, '')
+        };
+
+        const exist = await db.get('SELECT nik FROM penduduk WHERE nik = ? LIMIT 1', [payload.nik]);
+        if (exist) {
+          await db.run(
+            `UPDATE penduduk
+             SET nama = ?, no_kk = ?, tempat_lahir = ?, tanggal_lahir = ?, gender = ?, alamat = ?, dusun = ?, agama = ?, status_kawin = ?, pekerjaan = ?, pendidikan = ?, no_hp = ?
+             WHERE nik = ?`,
+            [
+              payload.nama,
+              payload.no_kk,
+              payload.tempat_lahir,
+              payload.tanggal_lahir,
+              payload.gender,
+              payload.alamat,
+              payload.dusun,
+              payload.agama,
+              payload.status_kawin,
+              payload.pekerjaan,
+              payload.pendidikan,
+              payload.no_hp,
+              payload.nik
+            ]
+          );
+          updated += 1;
+        } else {
+          await db.run(
+            'INSERT INTO penduduk (nik, nama, no_kk, tempat_lahir, tanggal_lahir, gender, alamat, dusun, agama, status_kawin, pekerjaan, pendidikan, no_hp) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [
+              payload.nik,
+              payload.nama,
+              payload.no_kk,
+              payload.tempat_lahir,
+              payload.tanggal_lahir,
+              payload.gender,
+              payload.alamat,
+              payload.dusun,
+              payload.agama,
+              payload.status_kawin,
+              payload.pekerjaan,
+              payload.pendidikan,
+              payload.no_hp
+            ]
+          );
+          inserted += 1;
+        }
+      }
+      await db.run('COMMIT');
+    } catch (e) {
+      await db.run('ROLLBACK');
+      throw e;
+    }
+
+    res.redirect(`/dashboard/penduduk?success=imported&inserted=${inserted}&updated=${updated}&skipped=${skipped}`);
+  } catch (error) {
+    console.error('Error import penduduk:', error);
+    res.redirect('/dashboard/penduduk?error=import_failed');
   }
 };
 
@@ -752,6 +1002,8 @@ module.exports = {
   addPenduduk,
   editPenduduk,
   deletePenduduk,
+  exportPendudukCsv,
+  importPendudukCsv,
   renderSettings,
   updateSettings,
   renderPegawai,

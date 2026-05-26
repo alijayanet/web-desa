@@ -2,103 +2,122 @@
 
 Repo: https://github.com/alijayanet/web-desa
 
-Web Desa Digital adalah aplikasi layanan dan manajemen desa berbasis web (Node.js + Express + EJS + SQLite). Aplikasi ini menyediakan portal publik untuk transparansi informasi desa dan portal dashboard untuk perangkat desa serta warga.
+Platform layanan dan manajemen desa berbasis web dengan portal publik (transparansi) dan dashboard (operasional) untuk perangkat desa serta warga.
 
-## Fitur Utama
+## Ringkas
 
-### Website Publik
-- Beranda + statistik ringkas (penduduk, surat selesai, pengaduan selesai, dusun).
-- Profil desa + struktur organisasi (dinamis dari pengaturan).
-- Berita & kegiatan desa.
-- Keuangan APBDes (transparansi dari data SQLite).
-- Navbar link eksternal dinamis (bisa diatur admin).
+**Stack**
+- Node.js + Express
+- EJS (server-rendered)
+- SQLite (sqlite + sqlite3)
+- Multer (upload)
+- express-session (session)
+- WhatsApp bot (Baileys) + QR PNG (qrcode)
 
-### Portal Dashboard (RBAC)
-- Login/Logout, registrasi warga berbasis NIK (penduduk terdaftar).
-- Manajemen penduduk (staff/sekdes).
-- Pengajuan surat online (warga).
-- Kelola & approval surat (staff/sekdes/kades/kuwu sesuai role yang dipakai).
-- Cetak surat.
-- Pengaduan warga + pengelolaan status pengaduan.
-- Manajemen berita, kategori, keuangan, pegawai.
-- Pengaturan profil desa (nama, alamat, logo, sebutan kades/kuwu, nav links, struktur organisasi, WhatsApp recipients).
+**Modul**
+| Modul | Ringkasan |
+|---|---|
+| Publik | Beranda, profil desa, berita, transparansi APBDes, navbar link eksternal dinamis |
+| Kependudukan | Manajemen penduduk + import/export CSV |
+| Surat | Pengajuan warga, verifikasi & approval, cetak surat |
+| Pengaduan | Pengajuan warga + tindak lanjut perangkat |
+| WhatsApp | QR scan, perintah warga, notifikasi admin/staff |
+| Absensi | Absen masuk/pulang berbasis foto + geo-tagging + radius kantor + notifikasi |
 
-### WhatsApp Bot (Baileys)
-- Status koneksi + QR scan dari dashboard.
-- Perintah warga (menu, daftar/login, pengajuan surat, cek status, cek APBDes).
-- Notifikasi ke admin/staff (nomor utama + daftar penerima tambahan) untuk pengajuan surat/pengaduan.
+## Role & Akses
 
-### Absensi Perangkat Desa (Scan Wajah + Geo Tagging)
-- Absensi masuk/pulang menggunakan foto (kamera/unggah) untuk staff/sekdes/kades/kuwu.
-- Geo-tagging wajib saat absen (lat/lng/akurasi).
-- Validasi radius kantor: absen ditolak jika di luar area kantor (radius diatur pada pengaturan).
-- Laporan absensi (monitor) untuk sekdes/kades/kuwu, menampilkan data + foto (tanpa form absen).
-- Notifikasi WhatsApp setiap ada absen masuk/pulang (ke nomor penerima pengaturan).
+- **warga**: pengajuan surat, pengaduan, profil saya
+- **staff**: penduduk, surat kelola, pengaduan kelola, berita, keuangan, kategori, absen saya
+- **sekdes / kades / kuwu**: monitoring & approval (lebih luas), pengaturan desa, laporan absensi
 
-## Teknologi
-- Backend: Node.js, Express
-- View: EJS
-- DB: SQLite (sqlite + sqlite3)
-- Upload file: Multer
-- Session: express-session
-- WhatsApp: @whiskeysockets/baileys, pino
-- QR PNG: qrcode
+## Cara Menjalankan (Local)
 
-## Struktur Folder Singkat
-- `server.js` : entrypoint aplikasi + route
-- `controllers/` : controller fitur (dashboard, surat, pengaduan, absensi, auth)
-- `services/` : WhatsApp bot
-- `views/` : template EJS (publik + dashboard)
-- `public/` : asset statis (css/js) + `uploads/`
-- `data/desa.db` : database SQLite
-
-## Instalasi & Menjalankan
-
-### Prasyarat
-- Node.js (disarankan versi LTS)
-
-### Langkah
-1. Install dependency:
+1. Install dependency
    ```bash
    npm install
    ```
-2. Jalankan aplikasi:
+2. Jalankan server
    ```bash
    npm run dev
    ```
-3. Buka:
+3. Buka
    - http://localhost:3000
 
-Catatan: database akan diinisialisasi otomatis saat server pertama kali dijalankan.
+Database SQLite akan diinisialisasi otomatis saat server pertama kali dijalankan.
 
-## Konfigurasi Environment (.env)
+## Konfigurasi (.env)
 
-Contoh variabel yang dipakai aplikasi:
-- `PORT=3000`
-- `SESSION_SECRET=...`
-- `WA_BOT_ENABLED=1` (aktifkan bot WhatsApp)
-- `APP_BASE_URL=https://domain-anda.com` (untuk link yang dibagikan via WhatsApp)
+Contoh:
+```env
+PORT=3000
+SESSION_SECRET=isi_dengan_random_yang_panjang
+WA_BOT_ENABLED=1
+APP_BASE_URL=https://domain-anda.com
+```
 
-## Pengaturan Penting di Dashboard
+Keterangan:
+- `WA_BOT_ENABLED=1` mengaktifkan WhatsApp bot
+- `APP_BASE_URL` dipakai untuk membuat link yang dikirim lewat WhatsApp (supaya tidak localhost)
 
-### Setting Penerima Notifikasi WhatsApp
-Atur di menu Pengaturan:
-- `NOMOR WHATSAPP (UNTUK KONTAK & NOTIF)` (utama)
-- `PENERIMA NOTIF WHATSAPP (STAFF/ADMIN)` (tambahan)
+## Pengaturan Penting (Dashboard)
 
-### Setting Lokasi Kantor (untuk Geo-tagging Absensi)
-Atur di menu Pengaturan:
-- `LATITUDE KANTOR`
-- `LONGITUDE KANTOR`
-- `RADIUS AREA (METER)`
+### WhatsApp (Notifikasi)
+Menu: Dashboard → Pengaturan Profil Desa
+- Nomor WhatsApp utama: `whatsapp`
+- Penerima tambahan: `wa_recipients` (maks 10 nomor)
 
-Jika lokasi kantor belum diatur, absensi akan ditolak.
+### Absensi (Geo-Tagging)
+Menu: Dashboard → Pengaturan Profil Desa
+- `office_lat` / `office_lng`: koordinat kantor desa
+- `office_radius_m`: radius validasi (meter)
 
-## Catatan Keamanan
+Jika lokasi kantor belum diatur, absensi ditolak.
+
+## Kependudukan: Import / Export CSV
+
+Menu: Dashboard → Penduduk
+- **Export**: download `penduduk-YYYY-MM-DD.csv`
+- **Import**: upload CSV, sistem akan:
+  - insert jika NIK belum ada
+  - update jika NIK sudah ada
+  - skip jika baris tidak valid
+
+Header yang didukung:
+`nik,nama,no_kk,tempat_lahir,tanggal_lahir,gender,alamat,dusun,agama,status_kawin,pekerjaan,pendidikan,no_hp`
+
+Minimal wajib ada: `nik,nama`
+
+## WhatsApp Bot
+
+Menu: Dashboard → WhatsApp Bot
+- Scan QR untuk menghubungkan nomor WhatsApp
+- Perintah warga tersedia (menu, daftar/login, surat, status, apbdes, keluar)
+- Notifikasi admin/staff untuk pengajuan surat/pengaduan dan event absensi
+
+## Absensi Perangkat
+
+Menu:
+- **Absen**: Dashboard → Absensi (foto + lokasi wajib)
+- **Laporan**: Dashboard → Laporan Absensi (monitoring untuk sekdes/kades/kuwu)
+
+Catatan:
+- Foto tersimpan di `public/uploads/attendance` dan aksesnya diproteksi (wajib login).
+- Saat absen, lokasi (lat/lng/akurasi) disimpan dan divalidasi terhadap radius kantor.
+
+## Struktur Proyek
+
+- `server.js` : routing + middleware
+- `controllers/` : fitur dashboard, surat, pengaduan, absensi, auth
+- `services/` : WhatsApp bot
+- `views/` : EJS publik + dashboard
+- `public/` : CSS/JS + `uploads/`
+- `data/desa.db` : database SQLite
+
+## Keamanan
+
 - Jangan commit `.env` ke repo publik.
-- Setelah deploy, pastikan mengganti `SESSION_SECRET`.
-- Jika ada akun/seed awal untuk kebutuhan demo, ganti passwordnya untuk produksi.
+- Pastikan `SESSION_SECRET` diganti untuk produksi.
 
 ## Lisensi
-MIT
 
+MIT

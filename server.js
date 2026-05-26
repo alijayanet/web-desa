@@ -2,6 +2,7 @@ require('dotenv').config(); // Muat variabel dari file .env
 
 const express = require('express');
 const session = require('express-session');
+const multer = require('multer');
 const path = require('path');
 const db = require('./controllers/db');
 
@@ -18,6 +19,23 @@ const absensiController = require('./controllers/absensiController');
 const auth = require('./middleware/auth');
 const upload = require('./middleware/upload');
 const waBot = require('./services/waBot');
+
+const uploadCsv = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const name = String(file.originalname || '').toLowerCase();
+    const okName = name.endsWith('.csv');
+    const type = String(file.mimetype || '').toLowerCase();
+    const okType =
+      type.includes('text/csv') ||
+      type.includes('application/csv') ||
+      type.includes('application/vnd.ms-excel') ||
+      type.includes('text/plain') ||
+      type.includes('application/octet-stream');
+    cb(null, okName || okType);
+  }
+});
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -108,6 +126,8 @@ app.get('/dashboard/penduduk', auth.restrictTo('staff', 'sekdes'), dashboardCont
 app.post('/dashboard/penduduk', auth.restrictTo('staff', 'sekdes'), dashboardController.addPenduduk);
 app.post('/dashboard/penduduk/edit', auth.restrictTo('staff', 'sekdes'), dashboardController.editPenduduk);
 app.get('/dashboard/penduduk/hapus/:nik', auth.restrictTo('staff', 'sekdes'), dashboardController.deletePenduduk);
+app.get('/dashboard/penduduk/export', auth.restrictTo('staff', 'sekdes'), dashboardController.exportPendudukCsv);
+app.post('/dashboard/penduduk/import', auth.restrictTo('staff', 'sekdes'), uploadCsv.single('file'), dashboardController.importPendudukCsv);
 
 // Pengajuan Surat Online (Akses: Warga saja)
 app.get('/dashboard/surat', auth.restrictTo('warga'), suratController.renderSuratWarga);

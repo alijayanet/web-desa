@@ -6,6 +6,12 @@
       <div style="display: flex; gap: 12px; flex-wrap: wrap;">
         <!-- Live Search Input -->
         <input type="text" id="searchPenduduk" onkeyup="filterTable('searchPenduduk', 'tablePenduduk')" placeholder="🔍 Cari nama, NIK, atau dusun..." class="form-control" style="max-width: 250px; padding: 8px 12px; font-size: 13px; border-radius: var(--radius-sm);">
+        <a href="/dashboard/penduduk/export" class="btn-sm btn-sm-secondary" style="padding: 8px 16px;">
+          ⬇️ Export CSV
+        </a>
+        <button onclick="openModal('importPendudukModal')" class="btn-sm btn-sm-secondary" style="padding: 8px 16px;">
+          ⬆️ Import CSV
+        </button>
         <button onclick="openModal('addPendudukModal')" class="btn-sm btn-sm-primary" style="padding: 8px 16px;">
           ➕ Tambah Penduduk
         </button>
@@ -15,14 +21,40 @@
     <% if (error) { %>
       <div class="alert alert-danger">
         <span>⚠️</span>
-        <div><%= error %></div>
+        <div>
+          <% if (error === 'export_failed') { %>
+            Gagal export data penduduk.
+          <% } else if (error === 'import_file_required') { %>
+            File CSV wajib dipilih.
+          <% } else if (error === 'import_empty') { %>
+            File CSV kosong atau tidak terbaca.
+          <% } else if (error === 'import_missing_headers') { %>
+            Header CSV wajib memiliki kolom: nik, nama.
+          <% } else if (error === 'import_failed') { %>
+            Import gagal. Pastikan format CSV benar.
+          <% } else { %>
+            <%= error %>
+          <% } %>
+        </div>
       </div>
     <% } %>
 
     <% if (success) { %>
       <div class="alert alert-success">
         <span>✓</span>
-        <div><%= success %></div>
+        <div>
+          <% if (success === 'created') { %>
+            Data penduduk berhasil ditambahkan.
+          <% } else if (success === 'updated') { %>
+            Data penduduk berhasil diperbarui.
+          <% } else if (success === 'deleted') { %>
+            Data penduduk berhasil dihapus.
+          <% } else if (success === 'imported') { %>
+            Import selesai. Insert: <%= inserted || 0 %>, Update: <%= updated || 0 %>, Skip: <%= skipped || 0 %>.
+          <% } else { %>
+            <%= success %>
+          <% } %>
+        </div>
       </div>
     <% } %>
 
@@ -69,6 +101,28 @@
           <% } %>
         </tbody>
       </table>
+    </div>
+  </div>
+
+  <div class="modal-bg" id="importPendudukModal">
+    <div class="modal-card" style="max-width: 560px;">
+      <div class="modal-header">
+        <h3 style="font-size: 18px; font-weight: 800;">Import Data Penduduk (CSV)</h3>
+        <button onclick="closeModal('importPendudukModal')" class="modal-close">&times;</button>
+      </div>
+      <form action="/dashboard/penduduk/import" method="POST" enctype="multipart/form-data">
+        <div class="form-group">
+          <label>FILE CSV</label>
+          <input type="file" name="file" class="form-control" accept=".csv,text/csv" required>
+          <div style="font-size: 11px; color: var(--text-muted); margin-top: 6px; line-height: 1.4;">
+            Gunakan header kolom: nik,nama,no_kk,tempat_lahir,tanggal_lahir,gender,alamat,dusun,agama,status_kawin,pekerjaan,pendidikan,no_hp
+          </div>
+        </div>
+        <div style="display: flex; gap: 12px; justify-content: flex-end; margin-top: 16px;">
+          <button type="button" onclick="closeModal('importPendudukModal')" class="btn-sm btn-sm-secondary" style="padding: 10px 20px;">Batal</button>
+          <button type="submit" class="btn-sm btn-sm-primary" style="padding: 10px 20px;">Import</button>
+        </div>
+      </form>
     </div>
   </div>
 
